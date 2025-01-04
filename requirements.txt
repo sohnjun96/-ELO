@@ -2,3 +2,4 @@ datetime
 streamlit
 numpy
 pandas
+openpyxl
