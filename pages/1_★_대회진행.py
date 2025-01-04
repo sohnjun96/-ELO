@@ -190,7 +190,7 @@ else:
     else:
         elo_system.k = k_친선
         
-    st.title(state["대회명"])
+    st.title(f'[대회 중] {state["대회명"]}')
     st.write(f"**대회일자**: {state['대회일자']}")
     st.write(f"**대회종류**: {state['대회종류']}")
     st.write(f"**K**: {elo_system.k}")
@@ -208,13 +208,13 @@ else:
         doubles = st.checkbox("복식 여부")
 
         if doubles:
-            teamA1 = st.selectbox("팀 A - 선수1", state["참가자"], key="teamA1")
-            teamA2 = st.selectbox("팀 A - 선수2", state["참가자"], key="teamA2")
-            teamB1 = st.selectbox("팀 B - 선수1", state["참가자"], key="teamB1")
-            teamB2 = st.selectbox("팀 B - 선수2", state["참가자"], key="teamB2")
+            teamA1 = st.selectbox("팀 A - 선수1", state["참가자"], key="teamA1", index = 0)
+            teamA2 = st.selectbox("팀 A - 선수2", state["참가자"], key="teamA2", index = 1)
+            teamB1 = st.selectbox("팀 B - 선수1", state["참가자"], key="teamB1", index = 2)
+            teamB2 = st.selectbox("팀 B - 선수2", state["참가자"], key="teamB2", index = 3)
         else:
-            player1 = st.selectbox("선수1", state["참가자"], key="player1")
-            player2 = st.selectbox("선수2", state["참가자"], key="player2")
+            player1 = st.selectbox("선수1", state["참가자"], key="player1", index = 0)
+            player2 = st.selectbox("선수2", state["참가자"], key="player2", index = 1)
 
         score1 = st.number_input("점수1", min_value=0, max_value=7, value=0, step=1)
         score2 = st.number_input("점수2", min_value=0, max_value=7, value=0, step=1)
@@ -263,14 +263,19 @@ else:
 
     # 설정 탭
     with tabs[0]:
+        # 경기시작 여부
+        경기시작 = len(pd.DataFrame(state["경기기록"]))>0
+        
         st.subheader("대회 설정")
         new_name = st.text_input("대회명", state["대회명"])
         new_date = st.date_input("대회일자", datetime.strptime(state["대회일자"], "%Y-%m-%d"))
+        
         new_type = st.radio(
             "대회종류",
             ["정기", "상시", "친선"],
             index=["정기", "상시", "친선"].index(state["대회종류"]),
-            help=f"정기는 K={k_정기}, 상시는 K={k_상시}, 친선은 K={k_친선} 입니다",
+            help=f"정기는 K={k_정기}, 상시는 K={k_상시}, 친선은 K={k_친선} 입니다. 경기 시작 후에는 변경할 수 없습니다.",
+            disabled=경기시작
         )
         new_participants = st.multiselect("참가자", elo_names, default=state["참가자"])
 
@@ -301,9 +306,9 @@ else:
                 st.subheader("승률 분석")
                 col1, col2 = st.columns(2)
                 with col1:
-                    선수1 = st.selectbox("선수1", state["참가자"])
+                    선수1 = st.selectbox("선수1", state["참가자"], index = 0)
                 with col2:
-                    선수2 = st.selectbox("선수2", state["참가자"])
+                    선수2 = st.selectbox("선수2", state["참가자"], index = 1)
                 
                 if 선수1 != 선수2:
                     try:
