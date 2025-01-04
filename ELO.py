@@ -115,3 +115,11 @@ class Elo:
     def 초기화(self):
         return self.ratings.clear()
     
+    
+def 전적계산(검색결과):
+    result = {"승리": sum(검색결과["점수1"] > 검색결과["점수2"]),
+              "패배": sum(검색결과["점수1"] < 검색결과["점수2"]),
+              "무승부": sum(검색결과["점수1"] == 검색결과["점수2"]),
+              "전체": len(검색결과)
+             }
+    return result     
