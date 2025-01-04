@@ -1,7 +1,6 @@
 pandas
 streamlit
 numpy
-matplotlib
 os
 pickle
 datetime
