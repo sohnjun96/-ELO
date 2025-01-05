@@ -16,7 +16,7 @@ directory_path = 'data/pickles'
 def DeleteAllFiles(filePath):
     if os.path.exists(filePath):
         for file in os.scandir(filePath):
-            if file.path != "data/pickles/.gitkeep"
+            if file.path != "data/pickles/.gitkeep":
                 os.remove(file.path)
         return True
     else:

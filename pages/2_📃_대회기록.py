@@ -12,7 +12,8 @@ directory_path = 'data/pickles'
 file_names = os.listdir(directory_path)
 game_names = []
 for file in file_names:
-    game_names.append(file.split('.')[0])
+    if 'pickle' in file:
+        game_names.append(file.split('.')[0])
     
 if len(game_names)>0:
     state_file_path = directory_path + '/'+st.selectbox("대회를 선택해주세요.", game_names, index = len(game_names)-1)+'.pickle'
