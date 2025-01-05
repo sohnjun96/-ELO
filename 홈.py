@@ -1,9 +1,32 @@
 from ELO import *
+import os
 import numpy as np
 import datetime as dt
 import pandas as pd
 import streamlit as st
 from datetime import datetime
+import shutil
+
+# 파일 경로 설정
+data_init_path = "data.xlsx"
+data_file_path = "data/data.xlsx"
+directory_path = 'data/pickles'
+
+# 초기화
+def DeleteAllFiles(filePath):
+    if os.path.exists(filePath):
+        for file in os.scandir(filePath):
+            os.remove(file.path)
+        return True
+    else:
+        return False
+    
+def initialize(data_init_path, data_file_path, directory_path):
+    if os.path.exists(data_file_path):
+        os.remove(data_file_path)
+    if os.path.exists(data_init_path):
+        shutil.copy(data_init_path, data_file_path)
+    DeleteAllFiles(directory_path)
 
 # ELO 랭킹 폼 생성
 def create_ELO_form(game):
@@ -317,5 +340,9 @@ except Exception as e:
 with st.popover("테정테세"):
     st.image("logo.webp")
     st.caption("제작자: 손준혁 using ChatGPT")
-
-
+    init = st.text_input(" ")
+    if init == "화기초":
+        btn = st.button("초기화")
+        if btn:
+            initialize(data_init_path, data_file_path, directory_path)
+            st.rerun()

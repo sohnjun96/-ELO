@@ -19,7 +19,6 @@ def load_elo_data(file_path):
         st.error(f"ELO 데이터를 로드하는 중 오류 발생: {e}")
         return []
 
-
 # State 저장
 def save_state(state):
     with open(state_file_path, "wb") as f:
