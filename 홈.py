@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 from datetime import datetime
 import shutil
+import zipfile
 
 # 파일 경로 설정
 data_init_path = "data.xlsx"
@@ -347,3 +348,21 @@ with st.popover("테정테세"):
         if btn:
             initialize(data_init_path, data_file_path, directory_path)
             st.rerun()
+    elif init == "다운로드":
+        btn = st.button("다운로드")
+        if btn:
+            file_path = 'data'
+
+            zip_file = zipfile.ZipFile("data.zip", "w")  # "w": write 모드
+            for (path, dir, files) in os.walk(file_path):
+                for file in files:
+                    zip_file.write(os.path.join(path, file), compress_type=zipfile.ZIP_DEFLATED)
+
+            zip_file.close()
+            
+            with open("data.zip", "rb") as file:
+                btn = st.download_button(
+                    label="다운로드",
+                    data=file,
+                    file_name=f'data_{datetime.today()}.zip',
+                )
