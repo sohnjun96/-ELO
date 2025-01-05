@@ -296,19 +296,16 @@ else:
         경기기록.index = 경기기록.index+1
         st.subheader("현황")
         if len(경기기록)>0:
-            st.write(f"진행 경기 : 총 {len(경기기록)} 회")
+            st.write(f"**진행 경기** : 총 {len(경기기록)} 회")
             
             with st.container(border=True):
                 for 참가자 in state['참가자']:
                     games_state = state_to_games_hist(state)
                     전적 = 전적계산(검색_게임(games_state, 참가자))
-                    
+                    # st.write(전적)
                     st.write(f'**{참가자}** -- 총 {전적["전체"]} 경기 ( {전적["승리"]} 승 / {전적["무승부"]} 무 / {전적["패배"]} 패 )')
             
             st.dataframe(경기기록)
-            
-
-            
             
             # 경기 기록 삭제 모달 대화 상자 구현
             @st.dialog("경기 기록 삭제")

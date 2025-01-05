@@ -255,12 +255,14 @@ def 검색_게임(games_hist, 입력_이름):
     return result
 
 def state_to_games_hist(state):
-    games_hist = state['경기기록'][0].copy()
-    games_hist["날짜"] = state['대회일자']
-    games_hist["대회명"] = state['대회명']
-    games_hist["K값"] = 200
-    games_hist = pd.DataFrame([games_hist])
+    result = []
+    for 경기 in state['경기기록']:
+        games_hist = 경기.copy()
+        games_hist["날짜"] = state['대회일자']
+        games_hist["대회명"] = state['대회명']
+        games_hist["K값"] = 200
+        result.append(games_hist)
     
-    return games_hist
+    return pd.DataFrame(result)
 
 
