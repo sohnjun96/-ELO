@@ -27,6 +27,7 @@ def initialize(data_init_path, data_file_path, directory_path):
     if os.path.exists(data_init_path):
         shutil.copy(data_init_path, data_file_path)
     DeleteAllFiles(directory_path)
+    os.mkdir(directory_path)
 
 # ELO 랭킹 폼 생성
 def create_ELO_form(game):
