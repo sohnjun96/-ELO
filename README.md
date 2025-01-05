@@ -8,6 +8,7 @@
 
 ### Issue
 - [x] 대회 진행 중에 현황(승무패) 잘못출력되는중
+- [ ] 재부팅시 선수 날아가는 문제 -> data.xlsx가 제대로 수정되지 않는듯
   
 ### 주소
 https://tjtsmds.streamlit.app/
