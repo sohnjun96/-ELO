@@ -16,7 +16,8 @@ directory_path = 'data/pickles'
 def DeleteAllFiles(filePath):
     if os.path.exists(filePath):
         for file in os.scandir(filePath):
-            os.remove(file.path)
+            if file.path != "data/pickles/.gitkeep"
+                os.remove(file.path)
         return True
     else:
         return False
@@ -27,7 +28,6 @@ def initialize(data_init_path, data_file_path, directory_path):
     if os.path.exists(data_init_path):
         shutil.copy(data_init_path, data_file_path)
     DeleteAllFiles(directory_path)
-    os.mkdir(directory_path)
 
 # ELO 랭킹 폼 생성
 def create_ELO_form(game):
