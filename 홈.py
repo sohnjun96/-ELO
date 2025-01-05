@@ -1,36 +1,21 @@
+from ELO import *
 import numpy as np
 import datetime as dt
 import pandas as pd
 import streamlit as st
 from datetime import datetime
 
-# 엑셀 로드 함수
-def load_excel(file_path):
-    data = pd.ExcelFile(file_path)
-    elo_hist = data.parse("ELO")
-    games_hist = data.parse("Games")
-    return elo_hist, games_hist
-
-# 엑셀 저장 함수
-def save_to_excel(file_path, elo_hist, games_hist):
-    with pd.ExcelWriter(file_path) as writer:
-        elo_hist.to_excel(writer, sheet_name="ELO", index=False)
-        games_hist.to_excel(writer, sheet_name="Games", index=False)
-
-# 랭킹 테이블 생성 함수 수정
-def create_ranking_table(elo_hist):
-    elo_hist['날짜'] = pd.to_datetime(elo_hist['날짜'], errors='coerce')
-    elo_hist = elo_hist.dropna(subset=['날짜'])
-    latest_elo = (
-        elo_hist.groupby('이름').apply(lambda x: x.loc[x['날짜'].idxmax()])
-        .reset_index(drop=True)
-    )
-    ranking_table = latest_elo.sort_values(['ELO', '날짜'], ascending=[False, False]).reset_index(drop=True)
-    ranking_table = ranking_table[['이름', 'ELO']]
-    ranking_table["ELO"] = round(ranking_table["ELO"],0)
-    ranking_table.index += 1  # 인덱스를 1부터 시작하도록 설정
-    return ranking_table
-
+# ELO 랭킹 폼 생성
+def create_ELO_form(game):
+    입력_이름 = game["이름"]
+    try:
+        대회수 = num_of_matchs(검색_ELO(st.session_state.elo_hist, 입력_이름))
+        경기수 = num_of_games(검색_게임(st.session_state.games_hist, 입력_이름))
+        # st.write(검색_게임(st.session_state.games_hist, 입력_이름))
+        st.write(f'###### **{rank_emoji(idx)} {입력_이름}** -- {format(int(game["ELO"]),",")} 점 ({경기수} 경기 /{대회수} 대회)')
+    except:
+        st.write("")
+        
 # 최근 경기 테이블 생성
 def create_recent_games_table(games_hist):
     
@@ -56,7 +41,7 @@ def create_recent_games_table(games_hist):
     recent_games.index += 1  # 인덱스를 1부터 시작하도록 설정
     return recent_games
 
-# 경기 폼 생성
+# 최근 경기 폼 생성
 def create_recent_games_form(game):
     with st.container(border=True):
         if game["복식여부"] == "복식":
@@ -222,14 +207,55 @@ def register_player():
             st.rerun()  # 새로고침 실행
         else:
             st.error("선수 이름을 입력해주세요.")
+            
+def ELO_시뮬레이션_form(elo_system):
+    with st.popover("ELO 승패 시뮬레이션"):
+        st.write("### ELO 승패 시뮬레이션")
+        col1, col2 = st.columns(2)
+        with col1:
+            ELO1 = st.number_input("선수1의 ELO: ", value = 2000, min_value = 1, max_value = 4000)
+            점수1 = st.number_input("선수1의 득점: ", value = 6, min_value = 0, max_value = 10)
+        with col2:
+            ELO2 = st.number_input("선수2의 ELO: ", value = 2000, min_value = 1, max_value = 4000)
+            점수2 = st.number_input("선수2의 득점: ", value = 0, min_value = 0, max_value = 10)
 
+        elo_system.초기화()
+        if (ELO1!=0) and (ELO2!=0):
+            tournament_type = st.radio(
+                "대회종류",
+                ["정기", "상시", "친선"],
+                help=f"정기는 K={k_정기}, 상시는 K={k_상시}, 친선은 K={k_친선} 입니다",
+            )
+                # ELO에 k 값 수정
+            if tournament_type == "정기":
+                elo_system.k = k_정기
+            elif tournament_type == "상시":
+                elo_system.k = k_상시
+            else:
+                elo_system.k = k_친선
+
+            elo_system.등록("선수1", ELO1)
+            elo_system.등록("선수2", ELO2)
+            elo_system.게임("선수1","선수2",scoring(점수1, 점수2))
+            result = elo_system.종료()
+            델타1 = result["선수1"] - ELO1
+            델타2 = result["선수2"] - ELO2
+            st.divider()
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric(label = f'{"선수1"}', value = f'{result["선수1"]}', delta = f'{round(델타1)} 점 ELO')
+            with col2:
+                st.metric(label = f'{"선수2"}', value = f'{result["선수2"]}', delta = f'{round(델타2)} 점 ELO')
+        else:
+            st.write("선수들의 득점을 확인해주세요.")
+            
+            
 # 랭킹 섹션
-st.header(":trophy: ELO 랭킹")
+st.write("### :trophy: ELO 랭킹")
 ranking_table = create_ranking_table(st.session_state.elo_hist)
 
 with st.container(border=True, height = 400):
-    
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         with st.popover("ELO 시스템이란?"):
             st.subheader("1. 개요")
@@ -258,34 +284,38 @@ with st.container(border=True, height = 400):
             st.write("- R: 기존 레이팅")
 
     if "register" not in st.session_state:
-        with col2:
+        with col3:
             if st.button("선수 등록"):
                 register_player()
     else:
         st.write(f"선수 '{st.session_state['register']}'이 등록되었습니다.")
+    
+    with col2:
+        elo_system = Elo()
+        ELO_시뮬레이션_form(elo_system)
 
+    # ELO 랭킹 폼 생성
     for idx, game in ranking_table.iterrows():
         with st.container(border=True):
-            입력_이름 = game["이름"]
-            try:
-                대회수 = num_of_matchs(검색_ELO(st.session_state.elo_hist, 입력_이름))
-                경기수 = num_of_games(검색_게임(st.session_state.games_hist, 입력_이름))
-                # st.write(검색_게임(st.session_state.games_hist, 입력_이름))
-                st.write(f'##### {rank_emoji(idx)} {입력_이름} -- {format(int(game["ELO"]),",")} 점 -- ({경기수} 경기 /{대회수} 대회)')
-            except:
-                st.write("")
+            create_ELO_form(game)
 
-
+st.divider()
+            
 # 최근 경기 섹션
-st.header(":chart: 최근 경기 ")
-recent_games_table = create_recent_games_table(st.session_state.games_hist)
-# st.dataframe(recent_games_table)
+st.write("### :chart: 최근 경기 ")
+try:
+    recent_games_table = create_recent_games_table(st.session_state.games_hist)
+    # st.dataframe(recent_games_table)
 
-with st.container(border=True, height = 500):
-    for idx, game in recent_games_table.iterrows():
-        create_recent_games_form(game)
+    with st.container(border=True, height = 500):
+        for idx, game in recent_games_table.iterrows():
+            create_recent_games_form(game)
+            
+except Exception as e:
+    st.error("저장된 경기가 없습니다. ")
 
 with st.popover("테정테세"):
     st.image("logo.webp")
     st.caption("제작자: 손준혁 using ChatGPT")
-    
+
+
