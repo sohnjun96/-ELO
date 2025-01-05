@@ -26,7 +26,7 @@ class Elo:
         delta_a = self.k * (result_a - expected_a)
         delta_b = -delta_a
 
-        return round(delta_a, 2), round(delta_b, 2)
+        return round(delta_a), round(delta_b)
 
     def 델타_복식(self, team_a, team_b, result_a):
         if any(player not in self.ratings for player in team_a) or any(player not in self.ratings for player in team_b):
@@ -41,7 +41,7 @@ class Elo:
         delta_a = self.k * (result_a - expected_a)
         delta_b = self.k * ((1 - result_a) - expected_b)
 
-        return round(delta_a, 2), round(delta_b, 2)
+        return round(delta_a), round(delta_b)
 
     def 게임_복식(self, team_a, team_b, result_a):
         if any(player not in self.ratings for player in team_a) or any(player not in self.ratings for player in team_b):
@@ -53,8 +53,8 @@ class Elo:
         expected_a = 1 / (1 + 10 ** ((avg_rating_b - avg_rating_a) / 400))
         expected_b = 1 - expected_a
 
-        delta_a = self.k * (result_a - expected_a)
-        delta_b = self.k * ((1 - result_a) - expected_b)
+        delta_a = round(self.k * (result_a - expected_a))
+        delta_b = round(self.k * ((1 - result_a) - expected_b))
 
         for player in team_a:
             self.pending_deltas.append((player, delta_a))
@@ -72,9 +72,9 @@ class Elo:
         rating_b = self.ratings[player_b]
 
         expected_a = 1 / (1 + 10 ** ((rating_b - rating_a) / 400))
-        delta = abs(self.k * (result_a - expected_a))
-        delta_a = self.k * (result_a - expected_a)
-        delta_b = -delta_a
+        delta = round(abs(self.k * (result_a - expected_a)))
+        delta_a = round(self.k * (result_a - expected_a))
+        delta_b = round(-delta_a)
 
         self.pending_deltas.append((player_a, delta_a))
         self.pending_deltas.append((player_b, delta_b))
@@ -123,3 +123,8 @@ def 전적계산(검색결과):
               "전체": len(검색결과)
              }
     return result     
+
+
+# ELO 점수 확인
+def elo_check(ranking_table, name):
+    return ranking_table.loc[ranking_table['이름']==name,["ELO"]].iloc[0,0]

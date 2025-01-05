@@ -40,10 +40,27 @@ def 검색_ELO(elo_hist, 입력_이름):
 
 # 입력_이름의 전적 검색
 def 검색_게임(games_hist, 입력_이름):
-    조건 = (games_hist["이름1"] == 입력_이름) + (games_hist["이름1A"] == 입력_이름) + (games_hist["이름2"] == 입력_이름) + (games_hist["이름2A"] == 입력_이름)
-    df = games_hist.loc[조건]
-    return process_matches(df.loc[조건], 입력_이름)
+    try:
+        조건 = (games_hist["이름1"] == 입력_이름) + (games_hist["이름1A"] == 입력_이름) + (games_hist["이름2"] == 입력_이름) + (games_hist["이름2A"] == 입력_이름)
+        df = games_hist.loc[조건]
+        return process_matches(df.loc[조건], 입력_이름)
+    except:
+        return None
 
+def num_of_matchs(matches):
+    try:
+        return len(matches) - len(matches.loc[matches["대회명"] == "등록"])
+    except:
+        return 0
+
+def num_of_games(games):
+    try:
+        return len(games)
+    except:
+        return 0    
+
+    
+    
 # 승자 및 팀 정보 반환 함수
 def get_match_result(row, name):
     def format_names(row):
@@ -121,9 +138,9 @@ try:
     랭킹_현재 = ranking_table.index[(ranking_table["이름"]==입력_이름)][0]
 
     st.title(입력_이름)
-    st.write(f'#### **전적**: 총 {게임_전적["전체"]} 게임 ({게임_전적["승리"]} 승 / {게임_전적["무승부"]} 무 / {게임_전적["패배"]} 패)')
-    st.write(f'#### **ELO**: {ELO_현재} 점 ({랭킹_현재} 위)')
-    st.write(f'#### **최근 참가 대회**: {검색결과["대회명"][0]}({검색결과["날짜"][0]})')
+    st.write(f'##### **전적**: 총 {게임_전적["전체"]} 게임 ({게임_전적["승리"]} 승 / {게임_전적["무승부"]} 무 / {게임_전적["패배"]} 패)')
+    st.write(f'##### **ELO**: {ELO_현재} 점 ({랭킹_현재} 위)')
+    st.write(f'##### **최근 참가 대회**: {검색결과["대회명"][0]}({검색결과["날짜"][0]})')
     
     tabs = st.tabs(["전적", "ELO변동", "분석"])
     
