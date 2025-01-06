@@ -4,6 +4,9 @@ import streamlit as st
 import pickle
 import os
 from datetime import datetime
+from slack import *
+import shutil
+import zipfile
 
 # 파일 경로 설정
 data_file_path = "data/data.xlsx"
@@ -344,6 +347,16 @@ else:
         with col1:
             if st.button("대회 종료"):
                 대회종료(state)
+                slack_send("message")
+                file_path = 'data'
+                zip_file = zipfile.ZipFile("data.zip", "w")  # "w": write 모드
+                for (path, dir, files) in os.walk(file_path):
+                    for file in files:
+                        zip_file.write(os.path.join(path, file), compress_type=zipfile.ZIP_DEFLATED)
+                zip_file.close()
+                
+                slack_upload("data.zip")
+                
                 state = None
                 elo_system.초기화()
                 st.rerun()
