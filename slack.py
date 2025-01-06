@@ -3,7 +3,7 @@ from slack_sdk.errors import SlackApiError
 import streamlit as st
 from datetime import datetime
 
-slack_token = st.secret["token"]
+slack_token = st.secrets["token"]
 client = WebClient(token=slack_token)
 slack_channel = "C087833T8K0"
 
