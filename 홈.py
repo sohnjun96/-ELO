@@ -185,26 +185,31 @@ def add_new_player(elo_hist, player_name):
     elo_hist = pd.concat([elo_hist, pd.DataFrame([new_player])], ignore_index=True)
     return elo_hist
 
-# 랭킹 이모지 반환
-def rank_emoji(rank):
-    table = {
-        1:"🥇 ",
-        2:"🥈 ",
-        3:"🥉 ",
-        4:":four: ",
-        5:":five: ",
-        6:":six: ",
-        7:":seven: ",
-        8:":eight: ",
-        9:":nine: ",
-        10:"**10**",
-        11:"**11**",
-        12:"**12**",
-        13:"**13**",
-        14:"**14**",
-        15:"**15**",
-    }
-    return table[rank]
+# 압축 해제 함수
+def extract_zip_file(uploaded_file):
+    """주어진 zip 파일을 현재 디렉토리에 압축 해제하는 함수"""
+    # 현재 디렉토리로 압축 해제
+    current_dir = os.getcwd()
+
+    # 업로드된 파일을 zip 파일로 처리
+    with zipfile.ZipFile(uploaded_file, "r") as zip_ref:
+        # 압축 해제
+        zip_ref.extractall(current_dir)
+        st.success(f"{uploaded_file.name} 파일의 압축을 현재 디렉토리에 성공적으로 풀었습니다.")
+
+    # 압축 해제된 파일 목록 표시
+    extracted_files = os.listdir(current_dir)
+    st.write("압축 해제된 파일 목록:")
+    st.write(extracted_files)
+
+# 'data' 폴더 삭제 함수
+def delete_data_folder(folder="data"):
+    """data 폴더와 그 안의 모든 파일을 삭제하는 함수"""
+    if os.path.exists(folder):
+        shutil.rmtree(folder)
+        st.success(f"{folder} 폴더와 그 안의 모든 파일을 삭제했습니다.")
+    else:
+        st.warning(f"{folder} 폴더가 존재하지 않습니다.")
 
 # 파일 경로
 file_path = "data/data.xlsx"
@@ -280,49 +285,50 @@ st.write("### :trophy: ELO 랭킹")
 ranking_table = create_ranking_table(st.session_state.elo_hist)
 
 with st.container(border=True, height = 400):
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        with st.popover("ELO 시스템이란?"):
-            st.subheader("1. 개요")
-            st.text("Elo(ELO) 레이팅 시스템은 경기 결과를 기반으로 플레이어 또는 팀의 상대적 실력을 평가하는 통계적 방법이다. 1950년대에 체스 마스터 아르파드 엘로(Arpad Elo)에 의해 개발되었으며, 현재 체스, 스포츠 리그, e스포츠, 보드 게임 등 다양한 분야에서 사용된다.")
-            st.write("- 실력 차가 많이 나는 상대를 이기면 점수가 많이 오르는 시스템")
-            st.write("- 복식은 팀별 평균 점수로 계산")
-            st.write("- 대회 시작 직전 ELO 기준으로 계산해서 대회 끝난 뒤 한꺼번에 반영")
-            st.write("- **초기 ELO는 2,000점**, 대회 규모별 차등 K 적용(정기: 200, 상시: 100, 친선: 0")
-            st.divider()
-            st.subheader("2. 계산")
-            st.write("##### 1. 예상 승률 계산:")
-            st.latex(r" E_A =  \frac{1}{1+10^{\frac{R_B - R_A}{400}}} ")
-            st.write("##### 2. 레이팅 변동량 (ΔR) 계산:")
-            st.latex(r"\Delta R = K \cdot (S - E)")
-            st.latex(r"S_1 = \frac{s_1}{s_1+s_2}")
-            st.write("- S: 경기 결과 (s1, s2: 선수1, 선수2의 점수)")
-            st.write("- E: 예상 승률")
-            st.write("##### 3. 복식 경기 팀 평균 레이팅:")
-            st.latex(r"\text{Team A Rating} = \frac{R_{A1} + R_{A2}}{2}")
-            st.latex(r"\text{Team B Rating} = \frac{R_{B1} + R_{B2}}{2}")
-            st.write("##### 4. 복식 경기 예상 승률:")
-            st.latex(r"E_A = \frac{1}{1 + 10^{\frac{\text{Team B Rating} - \text{Team A Rating}}{400}}}")
-            st.write("##### 5. 레이팅 업데이트:")
-            st.latex(r"\Delta R′=R+ΔR")
-            st.write("- R': 업데이트된 레이팅")
-            st.write("- R: 기존 레이팅")
-
-    if "register" not in st.session_state:
-        with col3:
-            if st.button("선수 등록"):
-                register_player()
-    else:
-        st.write(f"선수 '{st.session_state['register']}'이 등록되었습니다.")
-    
-    with col2:
-        elo_system = Elo()
-        ELO_시뮬레이션_form(elo_system)
-
     # ELO 랭킹 폼 생성
     for idx, game in ranking_table.iterrows():
         with st.container(border=True):
             create_ELO_form(game)
+
+# with st.container(border=True):
+col1, col2, col3 = st.columns(3)
+with col1:
+    with st.popover("ELO 시스템이란?"):
+        st.subheader("1. 개요")
+        st.text("Elo(ELO) 레이팅 시스템은 경기 결과를 기반으로 플레이어 또는 팀의 상대적 실력을 평가하는 통계적 방법이다. 1950년대에 체스 마스터 아르파드 엘로(Arpad Elo)에 의해 개발되었으며, 현재 체스, 스포츠 리그, e스포츠, 보드 게임 등 다양한 분야에서 사용된다.")
+        st.write("- 실력 차가 많이 나는 상대를 이기면 점수가 많이 오르는 시스템")
+        st.write("- 복식은 팀별 평균 점수로 계산")
+        st.write("- 대회 시작 직전 ELO 기준으로 계산해서 대회 끝난 뒤 한꺼번에 반영")
+        st.write("- **초기 ELO는 2,000점**, 대회 규모별 차등 K 적용(정기: 200, 상시: 100, 친선: 0")
+        st.divider()
+        st.subheader("2. 계산")
+        st.write("##### 1. 예상 승률 계산:")
+        st.latex(r" E_A =  \frac{1}{1+10^{\frac{R_B - R_A}{400}}} ")
+        st.write("##### 2. 레이팅 변동량 (ΔR) 계산:")
+        st.latex(r"\Delta R = K \cdot (S - E)")
+        st.latex(r"S_1 = \frac{s_1}{s_1+s_2}")
+        st.write("- S: 경기 결과 (s1, s2: 선수1, 선수2의 점수)")
+        st.write("- E: 예상 승률")
+        st.write("##### 3. 복식 경기 팀 평균 레이팅:")
+        st.latex(r"\text{Team A Rating} = \frac{R_{A1} + R_{A2}}{2}")
+        st.latex(r"\text{Team B Rating} = \frac{R_{B1} + R_{B2}}{2}")
+        st.write("##### 4. 복식 경기 예상 승률:")
+        st.latex(r"E_A = \frac{1}{1 + 10^{\frac{\text{Team B Rating} - \text{Team A Rating}}{400}}}")
+        st.write("##### 5. 레이팅 업데이트:")
+        st.latex(r"\Delta R′=R+ΔR")
+        st.write("- R': 업데이트된 레이팅")
+        st.write("- R: 기존 레이팅")
+
+if "register" not in st.session_state:
+    with col3:
+        if st.button("선수 등록"):
+            register_player()
+else:
+    st.write(f"선수 '{st.session_state['register']}'이 등록되었습니다.")
+
+with col2:
+    elo_system = Elo()
+    ELO_시뮬레이션_form(elo_system)
 
 st.divider()
             
@@ -366,3 +372,10 @@ with st.popover("테정테세"):
                     data=file,
                     file_name=f'data_{datetime.today()}.zip',
                 )
+    elif init == "업로드":
+        uploaded_file = st.file_uploader("ZIP 파일을 선택하세요", type=["zip"])
+        if uploaded_file is not None:
+            # 압축 해제 함수 호출
+            delete_data_folder()
+            extract_zip_file(uploaded_file)
+            

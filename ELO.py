@@ -265,4 +265,42 @@ def state_to_games_hist(state):
     
     return pd.DataFrame(result)
 
+def generate_league_schedule(df, participants):
+    # 단식만 필터링
+    singles_df = df[df['복식여부'] == '단식']
 
+    # 결과를 위한 빈 데이터프레임 생성 (초기값을 None으로 설정)
+    score_matrix = pd.DataFrame("", index=participants, columns=participants)
+
+    # 점수 입력
+    for _, row in singles_df.iterrows():
+        score_matrix.at[row['이름1'], row['이름2']] = row['점수1']
+        score_matrix.at[row['이름2'], row['이름1']] = row['점수2']
+
+    # 같은 사람끼리 대각선에 역슬래시 표시
+    for participant in participants:
+        score_matrix.at[participant, participant] = '\\'
+
+    # 결과 반환
+    return score_matrix
+
+# 랭킹 이모지 반환
+def rank_emoji(rank):
+    table = {
+        1:"🥇 ",
+        2:"🥈 ",
+        3:"🥉 ",
+        4:":four: ",
+        5:":five: ",
+        6:":six: ",
+        7:":seven: ",
+        8:":eight: ",
+        9:":nine: ",
+        10:"**10**",
+        11:"**11**",
+        12:"**12**",
+        13:"**13**",
+        14:"**14**",
+        15:"**15**",
+    }
+    return table[rank]

@@ -298,6 +298,8 @@ else:
         if len(경기기록)>0:
             st.write(f"**진행 경기** : 총 {len(경기기록)} 회")
             
+            st.table(generate_league_schedule(pd.DataFrame(state["경기기록"]), state["참가자"]))
+            
             with st.container(border=True):
                 for 참가자 in state['참가자']:
                     games_state = state_to_games_hist(state)
