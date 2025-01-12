@@ -5,6 +5,7 @@ import datetime as dt
 import pandas as pd
 import streamlit as st
 from datetime import datetime
+from slack import *
 import shutil
 import zipfile
 
@@ -349,12 +350,11 @@ with st.popover("테정테세"):
     st.image("logo.webp")
     st.caption("제작자: 손준혁 using ChatGPT")
     init = st.text_input(" ")
-    if init == "화기초":
+    if init == "관리자":
         btn = st.button("초기화")
         if btn:
             initialize(data_init_path, data_file_path, directory_path)
             st.rerun()
-    elif init == "다운로드":
         btn = st.button("다운로드")
         if btn:
             file_path = 'data'
@@ -372,10 +372,24 @@ with st.popover("테정테세"):
                     data=file,
                     file_name=f'data_{datetime.today()}.zip',
                 )
-    elif init == "업로드":
+            
+        if st.button("SLACK 전송"):
+            file_path = 'data'
+
+            zip_file = zipfile.ZipFile("data.zip", "w")  # "w": write 모드
+            for (path, dir, files) in os.walk(file_path):
+                for file in files:
+                    zip_file.write(os.path.join(path, file), compress_type=zipfile.ZIP_DEFLATED)
+
+            zip_file.close()
+            
+            slack_upload("data.zip")
+            st.write("완료")
+        
         uploaded_file = st.file_uploader("ZIP 파일을 선택하세요", type=["zip"])
         if uploaded_file is not None:
             # 압축 해제 함수 호출
             delete_data_folder()
             extract_zip_file(uploaded_file)
+            st.rerun()
             

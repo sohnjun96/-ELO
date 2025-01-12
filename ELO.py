@@ -252,7 +252,7 @@ def 검색_게임(games_hist, 입력_이름):
         result = process_matches(df.loc[조건], 입력_이름)
     except:
         result = None
-    return result
+    return result.reset_index(drop=True)
 
 def state_to_games_hist(state):
     result = []

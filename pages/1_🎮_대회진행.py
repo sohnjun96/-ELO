@@ -347,7 +347,6 @@ else:
         with col1:
             if st.button("대회 종료"):
                 대회종료(state)
-                slack_send("message")
                 file_path = 'data'
                 zip_file = zipfile.ZipFile("data.zip", "w")  # "w": write 모드
                 for (path, dir, files) in os.walk(file_path):
