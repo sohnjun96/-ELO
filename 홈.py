@@ -94,17 +94,7 @@ def create_recent_games_form(game):
             st.metric(label = f'{game["팀2"]}', value = f'{game["점수2"]}', delta = f'{round(델타2)} 점 ELO')
             st.write(승패2)
 
-def num_of_matchs(matches):
-    try:
-        return len(matches) - len(matches.loc[matches["대회명"] == "등록"])
-    except:
-        return 0
 
-def num_of_games(games):
-    try:
-        return len(games)
-    except:
-        return 0    
 
 # 승자 및 팀 정보 반환 함수
 def get_match_result(row, name):

@@ -69,7 +69,10 @@ if game_names:
 
     # 탭 구성
     tabs = st.tabs(["정보", "결과", "분석"])
-
+    
+    경기기록 = pd.DataFrame(state["경기기록"])
+    경기기록.index = 경기기록.index+1
+    
     # 정보 탭
     with tabs[0]:
         st.write(f'### 참가자: {len(state["참가자"])} 명')
@@ -86,8 +89,6 @@ if game_names:
 
     # 결과 탭
     with tabs[1]:
-        경기기록 = pd.DataFrame(state["경기기록"])
-        경기기록.index = 경기기록.index+1
         단식 = 경기기록[경기기록["복식여부"] == "단식"]
         복식 = 경기기록[경기기록["복식여부"] == "복식"]
 
@@ -104,22 +105,46 @@ if game_names:
 
     # 분석 탭
     with tabs[2]:
-        st.subheader("분석")
-        st.warning("제작 중...")
-    #     try:            
-    #         st.write("ELO 점수")
-    #         col1, col2 = st.columns(2)
-    #         with col1:
-    #             st.write("기존")
-    #             st.dataframe(elo_prev)
-    #         with col2:
-    #             st.write("결과")
-    #             st.dataframe(elo_result)
-    #         st.write("승률 분석")
-    #         st.dataframe(elo_system.승률())
+        # st.subheader("분석")
+        # st.warning("제작 중...")
+        
+        입력_이름 = st.selectbox("선수를 선택해주세요.", state["참가자"])
+        검색결과 = 검색_게임(경기기록, 입력_이름)
+        
+        base = 0
+        if state['대회종류'] == "정기":
+            base = 4
+        elif state['대회종류'] == "상시":
+            base = 1
+        else:
+            base = 0
+             
+        try:
+            경기수 = num_of_games(검색결과)
+            if len(검색결과)>0:
+                st.write(검색결과)
+            with st.container(border=True, height = 800):
+                
+                with st.container(border=True):
+                    st.metric(label = f'{입력_이름}', value = f'보너스 점수', delta = f'{round(경기수 * base)} 점 ELO')
+                for idx, game in 검색결과.iterrows():
+                    with st.container(border=True):
+                        if game["점수1"] > game["점수2"]:
+                            델타1 = game["델타"]
+                            델타2 = (-1) * game["델타"]
+                        else:
+                            델타1 = (-1) * game["델타"]
+                            델타2 = game["델타"]
+                        st.write("#### "+game['복식여부'])
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.metric(label = f'{game["팀1"]}', value = f'{game["점수1"]}', delta = f'{round(델타1)} 점 ELO')
+                        with col2:
+                            st.metric(label = f'{game["팀2"]}', value = f'{game["점수2"]}', delta = f'{round(델타2)} 점 ELO')
+                    
+        except:
+            pass
 
-    #     except Exception as e:
-    #         st.error(f"랭킹 테이블을 생성하는 중 오류 발생: {e}")
 else:
     st.title("대회기록")
     st.error("저장된 대회가 없습니다. ")

@@ -103,7 +103,9 @@ def 대회종료(state):
                    "elo_system": elo_system}
     
     finish_state(state)
-            
+    
+    st.toast("대회 입력 완료! 대회기록에서 결과를 확인하세요")
+        
     return elo_result
 
 
@@ -297,11 +299,12 @@ else:
     with tabs[2]:
         경기기록 = pd.DataFrame(state["경기기록"])
         경기기록.index = 경기기록.index+1
+        
         st.subheader("현황")
         if len(경기기록)>0:
             st.write(f"**진행 경기** : 총 {len(경기기록)} 회")
             
-            st.table(generate_league_schedule(pd.DataFrame(state["경기기록"]), state["참가자"]))
+            st.dataframe(generate_league_schedule(pd.DataFrame(state["경기기록"]), state["참가자"]))
             
             with st.container(border=True):
                 for 참가자 in state['참가자']:
@@ -342,7 +345,11 @@ else:
     with tabs[3]:
         st.subheader("대회 종료")
         st.warning("아래 버튼은 대회를 종료시킵니다. ")
-        
+        st.write("#### 대회 규모별 추가 점수 : ")
+        st.write("- 정기 : 경기수 x 4 점")
+        st.write("- 상시 : 경기수 x 1 점")
+        st.write("- 친선 : 0 점")
+        st.divider()
         col1, col2 = st.columns(2)
         with col1:
             if st.button("대회 종료"):
@@ -361,6 +368,7 @@ else:
                 st.rerun()
         with col2:
             if st.button("대회 취소"):
+                # if st.button("정말 취소하시겠습니까?"):
                 if os.path.exists(state_file_path):
                     os.remove(state_file_path)
                 state = None

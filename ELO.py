@@ -106,8 +106,21 @@ class Elo:
         """
         대기 중인 델타를 한꺼번에 반영하고, 현재 점수를 출력.
         """
+        # 변수 설정
+        k_정기 = 200
+        k_상시 = 100
+        k_친선 = 0
+        
+        base = 0
+        if self.k == k_정기:
+            base = 4
+        elif self.k == k_상시:
+            base = 1
+        else:
+            base = 0
+        
         for player, delta in self.pending_deltas:
-            self.ratings[player] += delta
+            self.ratings[player] += delta + base
 
         self.pending_deltas.clear()
         
@@ -115,7 +128,7 @@ class Elo:
     
     def 초기화(self):
         return self.ratings.clear()
-
+    
     
 # 엑셀 로드 함수
 def load_excel(file_path):
@@ -216,19 +229,34 @@ def get_match_result(row, name):
     else:
         winner = '무승부'
     
-    # 반환할 결과
-    result = {
-        '이름': name,
-        '팀1': my_team,
-        '점수1': my_score,
-        '팀2': opponent_team,
-        '점수2': opponent_score,
-        '날짜': row['날짜'],
-        '대회명': row['대회명'],
-        'K값': row['K값'],
-        '복식여부': row['복식여부'],
-        '델타': row['델타']
-    }
+    if '날짜' in row:
+        # 반환할 결과
+        result = {
+            '이름': name,
+            '팀1': my_team,
+            '점수1': my_score,
+            '팀2': opponent_team,
+            '점수2': opponent_score,
+            '날짜': row['날짜'],
+            '대회명': row['대회명'],
+            'K값': row['K값'],
+            '복식여부': row['복식여부'],
+            '델타': row['델타']
+        }
+    else:
+        result = {
+            '이름': name,
+            '팀1': my_team,
+            '점수1': my_score,
+            '팀2': opponent_team,
+            '점수2': opponent_score,
+            '날짜': "",
+            '대회명': "",
+            'K값': "",
+            '복식여부': row['복식여부'],
+            '델타': row['델타']
+        }
+    
     return result
 
 
@@ -250,9 +278,11 @@ def 검색_게임(games_hist, 입력_이름):
         조건 = (games_hist["이름1"] == 입력_이름) + (games_hist["이름1A"] == 입력_이름) + (games_hist["이름2"] == 입력_이름) + (games_hist["이름2A"] == 입력_이름)
         df = games_hist.loc[조건]
         result = process_matches(df.loc[조건], 입력_이름)
+        return result.reset_index(drop=True)
     except:
         result = None
-    return result.reset_index(drop=True)
+        return result
+    #return result.reset_index(drop=True)
 
 def state_to_games_hist(state):
     result = []
@@ -280,9 +310,15 @@ def generate_league_schedule(df, participants):
     # 같은 사람끼리 대각선에 역슬래시 표시
     for participant in participants:
         score_matrix.at[participant, participant] = '\\'
-
+        
+    # 빈칸을 색칠하는 함수
+    def highlight_blank_cells(val):
+        if not(pd.isna(val) or val == ''):
+            return 'background-color: green'  # 빈칸 색칠 (노란색)
+        return ''  # 나머지는 색칠 없음
+    
     # 결과 반환
-    return score_matrix
+    return score_matrix.style.applymap(highlight_blank_cells)
 
 # 랭킹 이모지 반환
 def rank_emoji(rank):
@@ -302,5 +338,23 @@ def rank_emoji(rank):
         13:"**13**",
         14:"**14**",
         15:"**15**",
+        16:"**16**",
+        17:"**17**",
+        18:"**18**",
+        19:"**19**",
+        20:"**20**",
     }
     return table[rank]
+
+
+def num_of_matchs(matches):
+    try:
+        return len(matches) - len(matches.loc[matches["대회명"] == "등록"])
+    except:
+        return 0
+
+def num_of_games(games):
+    try:
+        return len(games)
+    except:
+        return 0    
