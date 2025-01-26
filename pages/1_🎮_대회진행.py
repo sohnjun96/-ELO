@@ -361,8 +361,9 @@ else:
                         zip_file.write(os.path.join(path, file), compress_type=zipfile.ZIP_DEFLATED)
                 zip_file.close()
                 
-                slack_upload("data.zip")
-                
+                slack_upload("data.zip", f"{state['대회일자']}_{state['대회명']}")
+                with open('.version', 'w') as file:
+                    file.write(f"{state['대회일자']}_{state['대회명']}")
                 state = None
                 elo_system.초기화()
                 st.rerun()

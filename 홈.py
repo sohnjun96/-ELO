@@ -8,6 +8,7 @@ from datetime import datetime
 from slack import *
 import shutil
 import zipfile
+import requests
 
 # 파일 경로 설정
 data_init_path = "data.xlsx"
@@ -25,12 +26,33 @@ def DeleteAllFiles(filePath):
         return False
     
 def initialize(data_init_path, data_file_path, directory_path):
+    with open('.version', 'w') as file:
+        file.write(" ")
     if os.path.exists(data_file_path):
         os.remove(data_file_path)
     if os.path.exists(data_init_path):
         shutil.copy(data_init_path, data_file_path)
     DeleteAllFiles(directory_path)
 
+    
+# 최신 파일 압축 해제 및 적용
+# @st.cache_data
+def 업데이트():
+    # try:
+    title = file_read()
+
+    with open('.version', 'r') as file:
+        title_0 = print(file.read())
+
+    if title != title_0:
+        with open('.version', 'w') as file:
+            file.write(title)
+
+        delete_data_folder()
+        extract_zip_file('tmp.zip')
+    # except:
+    #     pass
+    
 # ELO 랭킹 폼 생성
 def create_ELO_form(game):
     입력_이름 = game["이름"]
@@ -186,12 +208,12 @@ def extract_zip_file(uploaded_file):
     with zipfile.ZipFile(uploaded_file, "r") as zip_ref:
         # 압축 해제
         zip_ref.extractall(current_dir)
-        st.success(f"{uploaded_file.name} 파일의 압축을 현재 디렉토리에 성공적으로 풀었습니다.")
+        # st.success(f"{uploaded_file.name} 파일의 압축을 현재 디렉토리에 성공적으로 풀었습니다.")
 
     # 압축 해제된 파일 목록 표시
     extracted_files = os.listdir(current_dir)
-    st.write("압축 해제된 파일 목록:")
-    st.write(extracted_files)
+    # st.write("압축 해제된 파일 목록:")
+    # st.write(extracted_files)
 
 # 'data' 폴더 삭제 함수
 def delete_data_folder(folder="data"):
@@ -205,11 +227,14 @@ def delete_data_folder(folder="data"):
 # 파일 경로
 file_path = "data/data.xlsx"
 
+
 # Streamlit 페이지 작성
 st.title(":tennis: 	테정테세문단세")
     
 # 세션 상태 초기화
 if "elo_hist" not in st.session_state or "games_hist" not in st.session_state:
+    업데이트()
+    
     elo_hist, games_hist = load_excel(file_path)
     st.session_state.elo_hist = elo_hist
     st.session_state.games_hist = games_hist
@@ -270,7 +295,7 @@ def ELO_시뮬레이션_form(elo_system):
         else:
             st.write("선수들의 득점을 확인해주세요.")
             
-            
+           
 # 랭킹 섹션
 st.write("### :trophy: ELO 랭킹")
 ranking_table = create_ranking_table(st.session_state.elo_hist)
@@ -373,7 +398,7 @@ with st.popover("테정테세"):
 
             zip_file.close()
             
-            slack_upload("data.zip")
+            slack_upload("data.zip", f'data_{datetime.now().date()}')
             st.write("완료")
         
         uploaded_file = st.file_uploader("ZIP 파일을 선택하세요", type=["zip"])
@@ -382,4 +407,9 @@ with st.popover("테정테세"):
             delete_data_folder()
             extract_zip_file(uploaded_file)
             st.rerun()
+            
+        if st.button("업데이트"):
+            # 압축 해제 함수 호출
+            업데이트()
+            # st.rerun()
             
