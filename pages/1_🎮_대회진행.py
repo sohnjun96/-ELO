@@ -10,7 +10,7 @@ import zipfile
 
 # 파일 경로 설정
 data_file_path = "data/data.xlsx"
-state_file_path = "data/state.pickle"
+state_file_path = "state.pickle"
 
 # ELO 데이터 로드
 def load_elo_data(file_path):
