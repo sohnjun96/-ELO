@@ -2,6 +2,7 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 import streamlit as st
 from datetime import datetime
+import requests
 
 slack_token = st.secrets["token"]
 client = WebClient(token=slack_token)
@@ -22,3 +23,17 @@ def slack_upload(slack_file):
         result = client.files_upload_v2(file=slack_file, channel = slack_channel, title=f'data_{datetime.today()}')
     except:
         print("Error while saving")
+
+# 최근 파일 다운로드 tmp.zip으로 저장
+def file_read():
+    response = client.conversations_history(
+        channel=slack_channel, #채널 id를 입력합니다.
+    )
+    url = response['messages'][0]['files'][0]['url_private_download']
+
+    with open('tmp.zip', "wb") as file:
+        slack_file = requests.get(url,  headers={'Authorization': 'Bearer %s' % slack_token})
+        file.write(slack_file.content)
+    title = response['messages'][0]['files'][0]['title']
+                                                
+    return title
