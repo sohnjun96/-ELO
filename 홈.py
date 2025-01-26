@@ -47,7 +47,8 @@ def 업데이트():
     if title != title_0:
         with open('.version', 'w') as file:
             file.write(title)
-
+        print(title)
+        print(title_0)
         delete_data_folder()
         extract_zip_file('tmp.zip')
     # except:
