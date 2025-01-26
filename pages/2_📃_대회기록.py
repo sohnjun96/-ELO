@@ -17,7 +17,7 @@ for file in file_names:
         game_names.append(file.split('.')[0])
     
 if len(game_names)>0:
-    state_file_path = directory_path + '/'+st.selectbox("대회를 선택해주세요.", game_names, index = len(game_names)-1)+'.pickle'
+    state_file_path = directory_path + '/'+st.selectbox("대회를 선택해주세요.", game_names, index = 0)+'.pickle'
     
 # State 로드
 def load_state():
