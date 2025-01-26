@@ -19,3 +19,7 @@
 
 ### 주소
 https://tjtsmds.streamlit.app/
+
+패치노트
+#### 250126
+- 자동 패치기능 추가
