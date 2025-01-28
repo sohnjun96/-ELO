@@ -36,13 +36,13 @@ def initialize(data_init_path, data_file_path, directory_path):
 
     
 # 최신 파일 압축 해제 및 적용
-# @st.cache_data
+@st.cache_data
 def 업데이트():
     # try:
     title = file_read()
 
     with open('.version', 'r') as file:
-        title_0 = print(file.read())
+        title_0 = file.read()
 
     if title != title_0:
         with open('.version', 'w') as file:
@@ -53,6 +53,7 @@ def 업데이트():
         extract_zip_file('tmp.zip')
     # except:
     #     pass
+    return title
     
 # ELO 랭킹 폼 생성
 def create_ELO_form(game):
