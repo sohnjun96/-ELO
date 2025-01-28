@@ -18,12 +18,12 @@ def slack_send(msg):
         assert e.response["error"]
 
 # 파일 업로드하는 함수
-def slack_upload(slack_file):
+def slack_upload(slack_file, comment):
     try:
-        result = client.files_upload_v2(file=slack_file, channel = slack_channel, title=f'data_{datetime.today()}')
+        result = client.files_upload_v2(file=slack_file, channel = slack_channel, title=f'data_{datetime.now().date()}', initial_comment = title)
     except:
         print("Error while saving")
-
+        
 # 최근 파일 다운로드 tmp.zip으로 저장
 def file_read():
     response = client.conversations_history(
@@ -34,6 +34,9 @@ def file_read():
     with open('tmp.zip', "wb") as file:
         slack_file = requests.get(url,  headers={'Authorization': 'Bearer %s' % slack_token})
         file.write(slack_file.content)
+    title = response['messages'][0]['files'][0]['title']
+                                                
+    return title
     title = response['messages'][0]['files'][0]['title']
                                                 
     return title
