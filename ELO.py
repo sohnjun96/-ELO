@@ -1,10 +1,19 @@
 import pandas as pd
+
+# 변수 설정
+k_정기 = 200
+k_상시 = 100
+k_친선 = 0
+
+
 class Elo:
-    def __init__(self, initial_k=100, default_rating=2000):
+    def __init__(self, initial_k=100, initial_base = 1, default_rating=2000):
         self.ratings = {}
         self.k = initial_k
+        self.base = initial_base
         self.default_rating = default_rating
         self.pending_deltas = []  # 대기 중인 델타 저장
+        self.games = []
 
     def 등록(self, name, init_point=None):
         if name not in self.ratings:
@@ -44,43 +53,75 @@ class Elo:
 
         return round(delta_a), round(delta_b)
 
-    def 게임_복식(self, team_a, team_b, result_a):
+    # 게임 ELO 계산 기능
+    def 게임(self, player_a, player_b, score_a, score_b):
+        if player_a not in self.ratings or player_b not in self.ratings:
+            raise ValueError(f"플레이어가 등록되지 않았습니다: {player_a}, {player_b}")
+        
+        result = scoring(score_a, score_b)
+        
+        rating_a = self.ratings[player_a]
+        rating_b = self.ratings[player_b]
+
+        expected_a = 1 / (1 + 10 ** ((rating_b - rating_a) / 400))
+        delta = round(abs(self.k * (result - expected_a)))
+        delta_a = round(self.k * (result - expected_a)) + self.base
+        delta_b = round(-self.k * (result - expected_a)) + self.base
+
+        self.pending_deltas.append((player_a, delta_a))
+        self.pending_deltas.append((player_b, delta_b))
+        
+        game = {
+            '복식여부': '단식',
+            '이름1' : player_a,
+            '이름1A': '',
+            '이름2': player_b,
+            '이름2A': '',
+            '점수1': score_a,
+            '점수2': score_b,
+            '델타1': delta_a,
+            '델타2': delta_b,
+        }
+        self.games.append(game)
+        
+        return game
+    
+    
+    def 게임_복식(self, team_a, team_b, score_a, score_b):
         if any(player not in self.ratings for player in team_a) or any(player not in self.ratings for player in team_b):
             raise ValueError(f"플레이어가 등록되지 않았습니다: {team_a}, {team_b}")
-
+        
+        result = scoring(score_a, score_b)
+        
         avg_rating_a = sum(self.ratings[player] for player in team_a) / len(team_a)
         avg_rating_b = sum(self.ratings[player] for player in team_b) / len(team_b)
 
         expected_a = 1 / (1 + 10 ** ((avg_rating_b - avg_rating_a) / 400))
         expected_b = 1 - expected_a
 
-        delta_a = round(self.k * (result_a - expected_a))
-        delta_b = round(self.k * ((1 - result_a) - expected_b))
+        delta_a = round(self.k * (result - expected_a)) + self.base
+        delta_b = round(self.k * ((1 - result) - expected_b)) + self.base
 
         for player in team_a:
             self.pending_deltas.append((player, delta_a))
 
         for player in team_b:
             self.pending_deltas.append((player, delta_b))
-
-        return abs(delta_a)
-
-    def 게임(self, player_a, player_b, result_a):
-        if player_a not in self.ratings or player_b not in self.ratings:
-            raise ValueError(f"플레이어가 등록되지 않았습니다: {player_a}, {player_b}")
-
-        rating_a = self.ratings[player_a]
-        rating_b = self.ratings[player_b]
-
-        expected_a = 1 / (1 + 10 ** ((rating_b - rating_a) / 400))
-        delta = round(abs(self.k * (result_a - expected_a)))
-        delta_a = round(self.k * (result_a - expected_a))
-        delta_b = round(-delta_a)
-
-        self.pending_deltas.append((player_a, delta_a))
-        self.pending_deltas.append((player_b, delta_b))
-
-        return abs(delta_a)
+        
+        game = {
+            '복식여부': '단식',
+            '이름1' : team_a[0],
+            '이름1A': team_a[1],
+            '이름2': team_b[0],
+            '이름2A': team_b[1],
+            '점수1': score_a,
+            '점수2': score_b,
+            '델타1': delta_a,
+            '델타2': delta_b,
+        }
+        self.games.append(game)
+        
+        return game
 
     def 승률(self):
         players = list(self.ratings.keys())
@@ -106,21 +147,8 @@ class Elo:
         """
         대기 중인 델타를 한꺼번에 반영하고, 현재 점수를 출력.
         """
-        # 변수 설정
-        k_정기 = 200
-        k_상시 = 100
-        k_친선 = 0
-        
-        base = 0
-        if self.k == k_정기:
-            base = 4
-        elif self.k == k_상시:
-            base = 1
-        else:
-            base = 0
-        
         for player, delta in self.pending_deltas:
-            self.ratings[player] += delta + base
+            self.ratings[player] += delta
 
         self.pending_deltas.clear()
         
@@ -187,12 +215,6 @@ def create_ranking_table(elo_hist):
     
     return ranking_table
 
-# 변수 설정
-k_정기 = 200
-k_상시 = 100
-k_친선 = 0
-
-
 # 승자 및 팀 정보 반환 함수
 def get_match_result(row, name):
     def format_names(row):
@@ -209,28 +231,23 @@ def get_match_result(row, name):
     # 이름1, 이름1A에 해당하는 팀 점수
     if name in [row['이름1'], row['이름1A']]:
         my_score = row['점수1']
-        opponent_score = row['점수2']
+        my_delta = row['델타1']
         my_team = player1
+        opponent_score = row['점수2']
+        opponent_delta = row['델타2']
         opponent_team = player2
     # 이름2, 이름2A에 해당하는 팀 점수
-    elif name in [row['이름2'], row['이름2A']]:
+    elif name in [row['이름2'], row['이름2A']]:      
         my_score = row['점수2']
-        opponent_score = row['점수1']
+        my_delta = row['델타2']
         my_team = player2
+        opponent_score = row['점수1']
+        opponent_delta = row['델타1']
         opponent_team = player1
     else:
         return "이름이 입력되지 않았습니다."
     
-    # 승자 판별
-    if my_score > opponent_score:
-        winner = '승리'
-    elif my_score < opponent_score:
-        winner = '패배'
-    else:
-        winner = '무승부'
-    
-    if '날짜' in row:
-        # 반환할 결과
+    if '대회명' in row.keys():
         result = {
             '이름': name,
             '팀1': my_team,
@@ -241,7 +258,8 @@ def get_match_result(row, name):
             '대회명': row['대회명'],
             'K값': row['K값'],
             '복식여부': row['복식여부'],
-            '델타': row['델타']
+            '델타1': my_delta,
+            '델타2': opponent_delta,
         }
     else:
         result = {
@@ -250,13 +268,14 @@ def get_match_result(row, name):
             '점수1': my_score,
             '팀2': opponent_team,
             '점수2': opponent_score,
-            '날짜': "",
-            '대회명': "",
-            'K값': "",
+            '날짜': '',
+            '대회명': '',
+            'K값': '',
             '복식여부': row['복식여부'],
-            '델타': row['델타']
+            '델타1': my_delta,
+            '델타2': opponent_delta,
         }
-    
+
     return result
 
 
@@ -266,7 +285,7 @@ def process_matches(df, name):
     for _, row in df.iterrows():
         result = get_match_result(row, name)
         results.append(result)
-    return pd.DataFrame(results)[["날짜", "대회명", "팀1", "팀2","점수1",  "점수2", "K값", "복식여부", "델타"]].fillna('').sort_values("날짜", ascending=False)
+    return pd.DataFrame(results)[["날짜", "대회명", "팀1", "팀2", "점수1",  "점수2", "K값", "복식여부", "델타1", "델타2"]].fillna('')
 
 # 입력_이름의 ELO 검색
 def 검색_ELO(elo_hist, 입력_이름):
@@ -277,12 +296,11 @@ def 검색_게임(games_hist, 입력_이름):
     try:
         조건 = (games_hist["이름1"] == 입력_이름) + (games_hist["이름1A"] == 입력_이름) + (games_hist["이름2"] == 입력_이름) + (games_hist["이름2A"] == 입력_이름)
         df = games_hist.loc[조건]
-        result = process_matches(df.loc[조건], 입력_이름)
+        result = process_matches(df, 입력_이름)
         return result.reset_index(drop=True)
     except:
         result = None
         return result
-    #return result.reset_index(drop=True)
 
 def state_to_games_hist(state):
     result = []
@@ -358,3 +376,4 @@ def num_of_games(games):
         return len(games)
     except:
         return 0    
+    
