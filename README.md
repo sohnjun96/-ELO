@@ -1,9 +1,7 @@
 # 테정테세문단세 ELO 랭킹 시스템
 
 ### 주소
-https://tjtsmds.streamlit.app/
-
-![{C64C63CD-4A2D-4758-80E8-99C2D415B1FB}](https://github.com/user-attachments/assets/eea17c85-8ff9-44ea-9e79-6b422e6e645f)
+![{C64C63CD-4A2D-4758-80E8-99C2D415B1FB}](https://tjtsmds.streamlit.app/)
 
 ## ELO 시스템이란?
 Elo(ELO) 레이팅 시스템은 경기 결과를 기반으로 플레이어 또는 팀의 상대적 실력을 평가하는 통계적 방법이다. 1950년대에 체스 마스터 아르파드 엘로(Arpad Elo)에 의해 개발되었으며, 현재 체스, 스포츠 리그, e스포츠, 보드 게임 등 다양한 분야에서 사용된다.
