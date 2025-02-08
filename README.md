@@ -1,4 +1,4 @@
-# 테미제라블 ELO 랭킹 시스템
+# 테정테세문단세 ELO 랭킹 시스템
 
 ### 주소
 https://tjtsmds.streamlit.app/
