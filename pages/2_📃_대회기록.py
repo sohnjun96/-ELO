@@ -5,6 +5,7 @@ import streamlit as st
 import pickle
 import os
 from datetime import datetime
+from 홈 import create_recent_games_form
 
 # 디렉토리 경로 지정
 directory_path = 'data/pickles'
@@ -27,7 +28,7 @@ def load_state():
     return None
 
 # 경기 폼 생성
-def create_recent_games_form_변형(state, game_hist):
+def create_recent_games_form_변형(game_hist):
     game = game_hist.copy()
     
     if game['복식여부'] == '복식':
@@ -43,12 +44,9 @@ def create_recent_games_form_변형(state, game_hist):
     game.index += 1  # 인덱스를 1부터 시작하도록 설정
     
     with st.container(border=True):
-        if game_hist["점수1"] > game_hist["점수2"]:
-            델타1 = game_hist["델타"]
-            델타2 = (-1) * game_hist["델타"]
-        else:
-            델타1 = (-1) * game_hist["델타"]
-            델타2 = game_hist["델타"]
+        델타1 = game_hist["델타1"]
+        델타2 = game_hist["델타2"]
+        
         st.write("#### "+game_hist['복식여부'])
         col1, col2 = st.columns(2)
         with col1:
@@ -98,7 +96,7 @@ if game_names:
 
             with st.container(border=True, height = 800):
                 for idx, game in 경기기록.iterrows():
-                    create_recent_games_form_변형(state, game)
+                    create_recent_games_form_변형(game)
 
         else:
             st.warning("경기를 기록해주세요. ")
@@ -110,40 +108,28 @@ if game_names:
         
         입력_이름 = st.selectbox("선수를 선택해주세요.", state["참가자"])
         검색결과 = 검색_게임(경기기록, 입력_이름)
-        
-        base = 0
-        if state['대회종류'] == "정기":
-            base = 4
-        elif state['대회종류'] == "상시":
-            base = 1
-        else:
-            base = 0
              
         try:
             경기수 = num_of_games(검색결과)
-            if len(검색결과)>0:
+            if 경기수>0:
                 st.write(검색결과)
             with st.container(border=True, height = 800):
-                
-                with st.container(border=True):
-                    st.metric(label = f'{입력_이름}', value = f'보너스 점수', delta = f'{round(경기수 * base)} 점 ELO')
-                for idx, game in 검색결과.iterrows():
-                    with st.container(border=True):
-                        if game["점수1"] > game["점수2"]:
-                            델타1 = game["델타"]
-                            델타2 = (-1) * game["델타"]
-                        else:
-                            델타1 = (-1) * game["델타"]
-                            델타2 = game["델타"]
-                        st.write("#### "+game['복식여부'])
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.metric(label = f'{game["팀1"]}', value = f'{game["점수1"]}', delta = f'{round(델타1)} 점 ELO')
-                        with col2:
-                            st.metric(label = f'{game["팀2"]}', value = f'{game["점수2"]}', delta = f'{round(델타2)} 점 ELO')
+                try:
+                    for idx, game in 검색결과.iterrows():
+                        with st.container(border=True):
+                            델타1 = game["델타1"]
+                            델타2 = game["델타2"]
+                            st.write("#### "+game['복식여부'])
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.metric(label = f'{game["팀1"]}', value = f'{game["점수1"]}', delta = f'{round(델타1)} 점 ELO')
+                            with col2:
+                                st.metric(label = f'{game["팀2"]}', value = f'{game["점수2"]}', delta = f'{round(델타2)} 점 ELO')
+                except:
+                    pass
                     
         except:
-            pass
+           pass
 
 else:
     st.title("대회기록")

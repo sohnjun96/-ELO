@@ -65,12 +65,14 @@ def 대회종료(state):
         팀B = (이름2, 이름2A)
         점수1 = 경기기록['점수1']
         점수2 = 경기기록['점수2']
-        승계수 = scoring(점수1, 점수2)
         
         if 경기기록['복식여부'] == "복식":
-            delta = elo_system.게임_복식(팀A, 팀B, 승계수)
+            tmp_game = elo_system.게임_복식(팀A, 팀B, 점수1, 점수2)
         else:
-            delta = elo_system.게임(이름1, 이름2, 승계수)
+            tmp_game = elo_system.게임(이름1, 이름2, 점수1, 점수2)
+        
+        경기기록['델타1'] = tmp_game['델타1']
+        경기기록['델타2'] = tmp_game['델타2']
         
         game = {"날짜": state['대회일자'],
                  "대회명": state['대회명'],
@@ -82,7 +84,11 @@ def 대회종료(state):
                 "이름2A": 이름2A,
                 "점수1": 점수1,
                 "점수2": 점수2,
-                 "델타": delta}
+                "델타1": tmp_game['델타1'],
+                "델타2": tmp_game['델타2'],
+               }
+        
+        
         games_hist = add_games(games_hist, game)
     
     elo_result = elo_system.종료().copy()
@@ -151,15 +157,19 @@ else:
     # ELO에 k 값 수정
     if state['대회종류'] == "정기":
         elo_system.k = k_정기
+        elo_system.base = 4
     elif state['대회종류'] == "상시":
         elo_system.k = k_상시
+        elo_system.base = 1
     else:
         elo_system.k = k_친선
+        elo_system.base = 0
         
     st.title(f'[대회 중] {state["대회명"]}')
     st.write(f"**대회일자**: {state['대회일자']}")
     st.write(f"**대회종류**: {state['대회종류']}")
     st.write(f"**K**: {elo_system.k}")
+    st.write(f"**base**: {elo_system.base}")
     
     # 참가자 elo_system에 등록
     ranking_table = create_ranking_table(pd.ExcelFile(data_file_path).parse("ELO"))
@@ -206,7 +216,6 @@ else:
                 "이름2A": teamB2 if doubles else "",
                 "점수1": score1,
                 "점수2": score2,
-                "델타": delta,
             }
             state["경기기록"].append(match_record)
             save_state(state)
@@ -341,7 +350,7 @@ else:
         else:
             st.warning("경기를 기록해주세요. ")
 
-    # 수정 탭
+    # 종료 탭
     with tabs[3]:
         st.subheader("대회 종료")
         st.warning("아래 버튼은 대회를 종료시킵니다. ")
@@ -361,12 +370,14 @@ else:
                         zip_file.write(os.path.join(path, file), compress_type=zipfile.ZIP_DEFLATED)
                 zip_file.close()
                 
-                slack_upload("data.zip", f"{state['대회일자']}_{state['대회명']}")
-                with open('.version', 'w') as file:
-                    file.write(f"{state['대회일자']}_{state['대회명']}")
-                state = None
-                elo_system.초기화()
-                st.rerun()
+                if slack_upload("data.zip", f"{state['대회일자']}_{state['대회명']}"):
+                    with open('.version', 'w') as file:
+                        file.write(f"{state['대회일자']}_{state['대회명']}")
+                    state = None
+                    elo_system.초기화()
+                    st.rerun()
+                else:
+                    st.write("저장 중 오류 발생!")
         with col2:
             if st.button("대회 취소"):
                 # if st.button("정말 취소하시겠습니까?"):

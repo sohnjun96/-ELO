@@ -34,9 +34,29 @@ def initialize(data_init_path, data_file_path, directory_path):
         shutil.copy(data_init_path, data_file_path)
     DeleteAllFiles(directory_path)
 
+
+def 버전():
+    with open('.version', 'r') as file:
+        return file.read()
+    
+def 업데이트_f():
+    # try:
+    title = file_read()
+
+    with open('.version', 'r') as file:
+        title_0 = file.read()
+
+    if title != title_0:
+        with open('.version', 'w') as file:
+            file.write(title)
+    delete_data_folder()
+    extract_zip_file('tmp.zip')
+    
+    return title
+    
     
 # 최신 파일 압축 해제 및 적용
-@st.cache_data
+# @st.cache_data
 def 업데이트():
     # try:
     title = file_read()
@@ -47,8 +67,6 @@ def 업데이트():
     if title != title_0:
         with open('.version', 'w') as file:
             file.write(title)
-        print(title)
-        print(title_0)
         delete_data_folder()
         extract_zip_file('tmp.zip')
     # except:
@@ -86,7 +104,7 @@ def create_recent_games_table(games_hist):
         lambda row: pd.Series(format_names(row)), axis=1
     )
     recent_games['날짜'] = pd.to_datetime(recent_games['날짜']).dt.date
-    recent_games = recent_games[['날짜', '대회명', '팀1', '팀2', '점수1', '점수2', "K값", "복식여부", "델타"]]
+    recent_games = recent_games[['날짜', '대회명', '팀1', '팀2', '점수1', '점수2', "K값", "복식여부", "델타1", "델타2"]]
     recent_games.reset_index(drop=True, inplace=True)
     recent_games.index += 1  # 인덱스를 1부터 시작하도록 설정
     return recent_games
@@ -99,14 +117,14 @@ def create_recent_games_form(game):
         else:
             이모티콘 = " "
         st.write(f'#### {game["날짜"]} {game["대회명"]} {이모티콘}')
-        if game["점수1"] > game["점수2"]:
-            델타1 = game["델타"]
-            델타2 = (-1) * game["델타"]
+        if game["델타1"] > game["델타2"]:
+            델타1 = game["델타1"]
+            델타2 = game["델타2"]
             승패1 = ":crown: 승리"
             승패2 = ":skull: 패배"
         else:
-            델타1 = (-1) * game["델타"]
-            델타2 = game["델타"]
+            델타1 = game["델타1"]
+            델타2 = game["델타2"]
             승패1 = ":skull: 패배"
             승패2 = ":crown: 승리"
             
@@ -117,67 +135,6 @@ def create_recent_games_form(game):
         with col2:
             st.metric(label = f'{game["팀2"]}', value = f'{game["점수2"]}', delta = f'{round(델타2)} 점 ELO')
             st.write(승패2)
-
-
-
-# 승자 및 팀 정보 반환 함수
-def get_match_result(row, name):
-    def format_names(row):
-        if row['복식여부'] == '복식':
-            player1 = f"{row['이름1']} & {row['이름1A']}" if row['이름1A'] else row['이름1']
-            player2 = f"{row['이름2']} & {row['이름2A']}" if row['이름2A'] else row['이름2']
-        else:
-            player1 = row['이름1']
-            player2 = row['이름2']
-        return player1, player2
-    
-    player1, player2 = format_names(row)
-    
-    # 이름1, 이름1A에 해당하는 팀 점수
-    if name in [row['이름1'], row['이름1A']]:
-        my_score = row['점수1']
-        opponent_score = row['점수2']
-        my_team = player1
-        opponent_team = player2
-    # 이름2, 이름2A에 해당하는 팀 점수
-    elif name in [row['이름2'], row['이름2A']]:
-        my_score = row['점수2']
-        opponent_score = row['점수1']
-        my_team = player2
-        opponent_team = player1
-    else:
-        return "이름이 입력되지 않았습니다."
-    
-    # 승자 판별
-    if my_score > opponent_score:
-        winner = '승리'
-    elif my_score < opponent_score:
-        winner = '패배'
-    else:
-        winner = '무승부'
-    
-    # 반환할 결과
-    result = {
-        '이름': name,
-        '팀1': my_team,
-        '점수1': my_score,
-        '팀2': opponent_team,
-        '점수2': opponent_score,
-        '날짜': row['날짜'],
-        '대회명': row['대회명'],
-        'K값': row['K값'],
-        '복식여부': row['복식여부'],
-        '델타': row['델타']
-    }
-    return result
-
-# 각 행에 대해 결과 생성
-def process_matches(df, name):
-    results = []
-    for _, row in df.iterrows():
-        result = get_match_result(row, name)
-        results.append(result)
-    return pd.DataFrame(results)[["날짜", "대회명", "팀1", "팀2","점수1",  "점수2", "K값", "복식여부", "델타"]].fillna('')
     
 # 입력_이름의 ELO 검색
 def 검색_ELO(elo_hist, 입력_이름):
@@ -284,7 +241,7 @@ def ELO_시뮬레이션_form(elo_system):
 
             elo_system.등록("선수1", ELO1)
             elo_system.등록("선수2", ELO2)
-            elo_system.게임("선수1","선수2",scoring(점수1, 점수2))
+            elo_system.게임("선수1","선수2",점수1, 점수2)
             result = elo_system.종료()
             델타1 = result["선수1"] - ELO1
             델타2 = result["선수2"] - ELO2
@@ -366,6 +323,7 @@ except Exception as e:
 with st.popover("테정테세"):
     st.image("logo.webp")
     st.caption("제작자: 손준혁 using ChatGPT")
+    st.write(버전())
     init = st.text_input(" ")
     if init == "관리자":
         btn = st.button("초기화")
@@ -390,18 +348,18 @@ with st.popover("테정테세"):
                     file_name=f'data_{datetime.today()}.zip',
                 )
             
-        if st.button("SLACK 전송"):
-            file_path = 'data'
+#         if st.button("SLACK 전송"):
+#             file_path = 'data'
 
-            zip_file = zipfile.ZipFile("data.zip", "w")  # "w": write 모드
-            for (path, dir, files) in os.walk(file_path):
-                for file in files:
-                    zip_file.write(os.path.join(path, file), compress_type=zipfile.ZIP_DEFLATED)
-
-            zip_file.close()
-            
-            slack_upload("data.zip", f'data_{datetime.now().date()}')
-            st.write("완료")
+#             zip_file = zipfile.ZipFile("data.zip", "w")  # "w": write 모드
+#             for (path, dir, files) in os.walk(file_path):
+#                 for file in files:
+#                     zip_file.write(os.path.join(path, file), compress_type=zipfile.ZIP_DEFLATED)
+                
+#             zip_file.close()
+#             comment = f'data_{datetime.now().date()}'
+#             slack_upload("data.zip", comment)
+#             st.write("완료 : " + comment)
         
         uploaded_file = st.file_uploader("ZIP 파일을 선택하세요", type=["zip"])
         if uploaded_file is not None:
@@ -412,6 +370,5 @@ with st.popover("테정테세"):
             
         if st.button("업데이트"):
             # 압축 해제 함수 호출
-            업데이트()
-            # st.rerun()
+            st.write("완료 : " + 업데이트_f())
             
