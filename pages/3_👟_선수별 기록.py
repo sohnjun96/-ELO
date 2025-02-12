@@ -54,7 +54,7 @@ try:
     with tabs[0]:
         st.header("경기 결과")
         with st.container(border=True, height = 800):
-            for idx, game in 검색결과.iterrows():
+            for idx, game in 검색결과.iloc[::-1].iterrows():
                 create_recent_games_form(game)
     with tabs[1]:
         st.write(ELO_전적)
