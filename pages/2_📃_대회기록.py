@@ -112,7 +112,7 @@ if game_names:
         try:
             경기수 = num_of_games(검색결과)
             if 경기수>0:
-                st.write(검색결과)
+                검색결과.loc[:,["팀1", "팀2", "점수1", "점수2", "복식여부", "델타1", "델타2"]]
             with st.container(border=True, height = 800):
                 try:
                     for idx, game in 검색결과.iterrows():
