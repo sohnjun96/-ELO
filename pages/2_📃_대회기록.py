@@ -75,7 +75,7 @@ if game_names:
     with tabs[0]:
         st.write(f'### 참가자: {len(state["참가자"])} 명')
         with st.container(height = 800):
-            for 참가자 in state["참가자"]:
+            for 참가자, 점수 in sorted(state['ELO']['결과'].items(), key=lambda x: x[1], reverse=True):
                 with st.container(border=True):
                     col1, col2, col3 = st.columns(3)
                     with col1:
