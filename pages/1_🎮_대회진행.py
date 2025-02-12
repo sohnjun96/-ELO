@@ -371,7 +371,7 @@ else:
                 zip_file.close()
                 
                 if slack_upload("data.zip", f"{state['대회일자']}_{state['대회명']}"):
-                    with open('.version', 'w', encoding='utf8') as file:
+                    with open('.version', 'w') as file:
                         file.write(f"{state['대회일자']}_{state['대회명']}")
                     state = None
                     elo_system.초기화()

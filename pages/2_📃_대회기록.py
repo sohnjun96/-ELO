@@ -47,7 +47,7 @@ def create_recent_games_form_변형(game_hist):
         델타1 = game_hist["델타1"]
         델타2 = game_hist["델타2"]
         
-        st.write("#### "+game_hist['복식여부'])
+        st.write("##### "+game_hist['복식여부'])
         col1, col2 = st.columns(2)
         with col1:
             st.metric(label = f'{player1}', value = f'{game_hist["점수1"]}', delta = f'{round(델타1)} 점 ELO')
@@ -108,11 +108,12 @@ if game_names:
         
         입력_이름 = st.selectbox("선수를 선택해주세요.", state["참가자"])
         검색결과 = 검색_게임(경기기록, 입력_이름)
+        검색결과.index = 검색결과.index+1
              
         try:
             경기수 = num_of_games(검색결과)
             if 경기수>0:
-                검색결과.loc[:,["팀1", "팀2", "점수1", "점수2", "복식여부", "델타1", "델타2"]]
+                st.write(검색결과.loc[:,["팀1", "팀2", "점수1", "점수2", "복식여부", "델타1", "델타2"]])
             with st.container(border=True, height = 800):
                 try:
                     for idx, game in 검색결과.iterrows():

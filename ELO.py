@@ -377,3 +377,30 @@ def num_of_games(games):
     except:
         return 0    
     
+def 랭킹_hist(elo_hist):
+
+    tmp_날짜 = elo_hist.loc[0]['날짜']
+    tmp_대회명 = elo_hist.loc[0]['대회명']
+    tmp_K값 = elo_hist.loc[0]['K값']
+    result = pd.DataFrame([])
+
+    for idx, row in elo_hist.iterrows():
+        if idx and ((row['날짜']!=tmp_날짜) or row['대회명'] != tmp_대회명):
+            tmp = create_ranking_table(elo_hist[0:idx]).reset_index()
+            tmp['대회명'] = tmp_대회명
+            tmp['날짜'] = tmp_날짜
+            tmp['K값'] = tmp_K값
+            result = pd.concat([result, tmp])
+        tmp_날짜 = row['날짜']
+        tmp_대회명 = row['대회명']
+        tmp_K값 = row['K값']
+
+        if idx == len(elo_hist)-1:
+            tmp = create_ranking_table(elo_hist).reset_index()
+            tmp['대회명'] = tmp_대회명
+            tmp['날짜'] = tmp_날짜
+            tmp['K값'] = tmp_K값
+            result = pd.concat([result, tmp])
+    result = result.rename(columns={'index':'순위'}).reset_index(drop=True)
+    
+    return result
