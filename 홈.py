@@ -116,25 +116,23 @@ def create_recent_games_form(game):
             이모티콘 = " :couple: "
         else:
             이모티콘 = " "
-        st.write(f'#### {game["날짜"]} {game["대회명"]} {이모티콘}')
+        st.write(f'##### {game["날짜"]} {game["대회명"]} {이모티콘}')
         if game["점수1"] > game["점수2"]:
             델타1 = game["델타1"]
             델타2 = game["델타2"]
-            승패1 = ":crown: 승리"
-            승패2 = ":skull: 패배"
+            승패1 = ":crown:"
+            승패2 = ":skull:"
         else:
             델타1 = game["델타1"]
             델타2 = game["델타2"]
-            승패1 = ":skull: 패배"
-            승패2 = ":crown: 승리"
+            승패1 = ":skull:"
+            승패2 = ":crown:"
             
         col1, col2 = st.columns(2)
         with col1:
-            st.metric(label = f'{game["팀1"]}', value = f'{game["점수1"]}', delta = f'{round(델타1)} 점 ELO')
-            st.write(승패1)
+            st.metric(label = f'{승패1} {game["팀1"]}', value = f'{game["점수1"]}', delta = f'{round(델타1)} 점 ELO')
         with col2:
-            st.metric(label = f'{game["팀2"]}', value = f'{game["점수2"]}', delta = f'{round(델타2)} 점 ELO')
-            st.write(승패2)
+            st.metric(label = f'{승패2} {game["팀2"]}', value = f'{game["점수2"]}', delta = f'{round(델타2)} 점 ELO')
     
 # 입력_이름의 ELO 검색
 def 검색_ELO(elo_hist, 입력_이름):
