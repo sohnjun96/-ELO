@@ -117,7 +117,7 @@ def create_recent_games_form(game):
         else:
             이모티콘 = " "
         st.write(f'#### {game["날짜"]} {game["대회명"]} {이모티콘}')
-        if game["델타1"] > game["델타2"]:
+        if game["점수1"] > game["점수2"]:
             델타1 = game["델타1"]
             델타2 = game["델타2"]
             승패1 = ":crown: 승리"
