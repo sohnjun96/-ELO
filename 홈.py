@@ -69,6 +69,7 @@ def 업데이트():
             file.write(title)
         delete_data_folder()
         extract_zip_file('tmp.zip')
+        st.success(f"{title} 버전 로드 성공!")
     # except:
     #     pass
     return title
@@ -177,7 +178,7 @@ def delete_data_folder(folder="data"):
     """data 폴더와 그 안의 모든 파일을 삭제하는 함수"""
     if os.path.exists(folder):
         shutil.rmtree(folder)
-        st.success(f"{folder} 폴더와 그 안의 모든 파일을 삭제했습니다.")
+        # st.success(f"{folder} 폴더와 그 안의 모든 파일을 삭제했습니다.")
     else:
         st.warning(f"{folder} 폴더가 존재하지 않습니다.")
 
