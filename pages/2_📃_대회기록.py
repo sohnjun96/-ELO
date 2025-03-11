@@ -16,7 +16,9 @@ game_names = []
 for file in file_names:
     if 'pickle' in file:
         game_names.append(file.split('.')[0])
-    
+
+game_names.sort(reverse=True)
+
 if len(game_names)>0:
     state_file_path = directory_path + '/'+st.selectbox("대회를 선택해주세요.", game_names, index = 0)+'.pickle'
     
