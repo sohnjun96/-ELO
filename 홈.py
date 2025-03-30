@@ -201,7 +201,7 @@ if "elo_hist" not in st.session_state or "games_hist" not in st.session_state:
 # 선수 등록 모달 대화 상자 구현
 @st.dialog("새로운 선수 등록")
 def register_player():
-    tmp_score = int(create_ranking_table(elo_hist)['ELO'].mean())
+    tmp_score = int(create_ranking_table(st.session_state.elo_hist)['ELO'].mean())
     st.write(f"초기 점수: {tmp_score}점")
     
     player_name = st.text_input("새로운 선수의 이름을 입력:")
