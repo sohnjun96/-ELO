@@ -152,7 +152,8 @@ def 검색_게임(games_hist, 입력_이름):
 # 새로운 선수 등록 함수
 def add_new_player(elo_hist, player_name):
     today = datetime.today().strftime("%Y-%m-%d")
-    new_player = {"날짜": today, "대회명": "등록", "K값": 0, "이름": player_name, "ELO": 2000}
+    tmp_score = int(create_ranking_table(elo_hist)['ELO'].mean())
+    new_player = {"날짜": today, "대회명": "등록", "K값": 0, "이름": player_name, "ELO": tmp_score}
     elo_hist = pd.concat([elo_hist, pd.DataFrame([new_player])], ignore_index=True)
     return elo_hist
 
@@ -200,7 +201,8 @@ if "elo_hist" not in st.session_state or "games_hist" not in st.session_state:
 # 선수 등록 모달 대화 상자 구현
 @st.dialog("새로운 선수 등록")
 def register_player():
-    st.write("초기 점수: 2,000점")
+    tmp_score = int(create_ranking_table(elo_hist)['ELO'].mean())
+    st.write(f"초기 점수: {tmp_score}점")
     
     player_name = st.text_input("새로운 선수의 이름을 입력:")
     if st.button("등록"):
