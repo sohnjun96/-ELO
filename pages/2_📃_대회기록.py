@@ -84,8 +84,10 @@ if game_names:
                         st.subheader(참가자)
                     with col2:
                         결과 = round(elo_result[참가자],)
+                        기존 = round(elo_prev[참가자],)
                         델타 = round(elo_result[참가자] - elo_prev[참가자],)
-                        st.metric(label="ELO", value = f"{결과} 점", delta=f"{델타} 점")
+                        
+                        st.metric(label="ELO", value = f"{결과} 점", delta=f"{델타} 점 ({기존} 점)")
 
     # 결과 탭
     with tabs[1]:
