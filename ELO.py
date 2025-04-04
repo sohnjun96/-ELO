@@ -322,8 +322,8 @@ def generate_league_schedule(df, participants):
 
     # 점수 입력
     for _, row in singles_df.iterrows():
-        score_matrix.at[row['이름1'], row['이름2']] = row['점수1']
-        score_matrix.at[row['이름2'], row['이름1']] = row['점수2']
+        score_matrix.at[row['이름1'], row['이름2']] = f"{row['점수1']} : {row['점수2']}"
+        score_matrix.at[row['이름2'], row['이름1']] = f"{row['점수2']} : {row['점수1']}"
 
     # 같은 사람끼리 대각선에 역슬래시 표시
     for participant in participants:
