@@ -430,7 +430,7 @@ try:
                 barmode='stack',
                 yaxis2=dict(
                     title='승률 (%)',
-                    titlefont=dict(color='black'),
+                    title_font=dict(color='black'),
                     tickfont=dict(color='black'),
                     anchor='x',
                     overlaying='y',
@@ -490,7 +490,7 @@ try:
                 barmode='stack',
                 yaxis2=dict(
                     title='승률 (%)',
-                    titlefont=dict(color='black'),
+                    title_font=dict(color='black'),
                     tickfont=dict(color='black'),
                     anchor='x',
                     overlaying='y',
@@ -550,7 +550,7 @@ try:
                     barmode='stack',
                     yaxis2=dict(
                         title='승률 (%)',
-                        titlefont=dict(color='black'),
+                        title_font=dict(color='black'),
                         tickfont=dict(color='black'),
                         anchor='x',
                         overlaying='y',
