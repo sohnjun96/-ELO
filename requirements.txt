@@ -4,3 +4,4 @@ numpy
 pandas
 openpyxl
 slack_sdk
+plotly
