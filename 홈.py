@@ -87,54 +87,199 @@ def create_ELO_form(game):
         
 # 최근 경기 테이블 생성
 def create_recent_games_table(games_hist):
-    
     recent_games = games_hist.copy()
     recent_games['날짜'] = pd.to_datetime(recent_games['날짜']).dt.date
     recent_games = recent_games.sort_values('날짜', ascending=False).head(5)
 
     def format_names(row):
-        if row['복식여부'] == '복식':
-            player1 = f"{row['이름1']} & {row['이름1A']}" if row['이름1A'] else row['이름1']
-            player2 = f"{row['이름2']} & {row['이름2A']}" if row['이름2A'] else row['이름2']
-        else:
-            player1 = row['이름1']
-            player2 = row['이름2']
+        player1 = row['이름1']
+        player2 = row['이름2']
+        
+        if '이름1A' in row and pd.notna(row['이름1A']):
+            player1 = f"{row['이름1']} & {row['이름1A']}"
+        if '이름2A' in row and pd.notna(row['이름2A']):
+            player2 = f"{row['이름2']} & {row['이름2A']}"
+            
         return player1, player2
- 
+
     recent_games[['팀1', '팀2']] = recent_games.apply(
         lambda row: pd.Series(format_names(row)), axis=1
     )
-    recent_games['날짜'] = pd.to_datetime(recent_games['날짜']).dt.date
-    recent_games = recent_games[['날짜', '대회명', '팀1', '팀2', '점수1', '점수2', "K값", "복식여부", "델타1", "델타2"]]
+    recent_games = recent_games[['날짜', '대회명', '팀1', '팀2', '점수1', '점수2', 'K값', '복식여부', '델타1', '델타2']]
     recent_games.reset_index(drop=True, inplace=True)
-    recent_games.index += 1  # 인덱스를 1부터 시작하도록 설정
+    recent_games.index += 1
     return recent_games
 
-# 최근 경기 폼 생성
+# 스타일 상수 정의
+STYLE_CONSTANTS = {
+    'COLOR_WIN': '#1E88E5',  # 승리 색상 (파란색)
+    'COLOR_LOSE': '#F44336',  # 패배 색상 (빨간색)
+    'COLOR_PRIMARY': '#1E88E5',  # 주요 차트 색상 (파란색)
+    'DOUBLES_EMOJI': ' 👥 '  # 복식 경기 이모지
+}
+
+# CSS 스타일 템플릿
+CSS_TEMPLATE = """
+<style>
+    .game-card {
+        background-color: transparent;
+        border: 1px solid rgba(128, 128, 128, 0.3);
+        border-radius: 10px;
+        margin: 10px 0;
+        padding: 15px;
+        transition: transform 0.2s;
+    }
+    .game-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .game-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .game-date {
+        font-size: 0.9em;
+        font-weight: 500;
+    }
+    .game-tournament {
+        font-weight: bold;
+    }
+    .game-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .game-teams {
+        flex: 1;
+        min-width: 200px;
+    }
+    .game-team {
+        display: flex;
+        align-items: center;
+        margin: 5px 0;
+        font-size: 1.1em;
+    }
+    .team-name {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 500;
+    }
+    .elo-delta {
+        font-size: 0.8em;
+        font-weight: 500;
+    }
+    .game-score {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        min-width: 80px;
+    }
+    .score-value {
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+    .team-result {
+        padding: 1px 4px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 0.6em;
+        color: white;
+        margin-right: 6px;
+        letter-spacing: -0.5px;
+    }
+    @media (max-width: 600px) {
+        .game-content {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .game-teams {
+            flex: 1;
+            min-width: 0;
+        }
+        .team-name {
+            flex-wrap: wrap;
+        }
+        .game-score {
+            margin: 0 10px;
+            min-width: 60px;
+        }
+        .score-value {
+            font-size: 1.2em;
+        }
+        .elo-delta {
+            font-size: 0.7em;
+        }
+    }
+</style>
+"""
+
+def format_elo_delta(delta):
+    """ELO 델타 값을 포맷팅하는 함수"""
+    return f"+{delta}" if delta > 0 else f"{delta}"
+
+def get_game_result(game):
+    """경기 결과 정보를 반환하는 함수"""
+    is_win = game['점수1'] > game['점수2']
+    return {
+        'is_win': is_win,
+        'result_color1': STYLE_CONSTANTS['COLOR_WIN'] if is_win else STYLE_CONSTANTS['COLOR_LOSE'],
+        'result_color2': STYLE_CONSTANTS['COLOR_LOSE'] if is_win else STYLE_CONSTANTS['COLOR_WIN'],
+        'result_text1': "승리" if is_win else "패배",
+        'result_text2': "패배" if is_win else "승리"
+    }
+
+def get_doubles_emoji(game):
+    """복식 경기 여부에 따른 이모지를 반환하는 함수"""
+    return STYLE_CONSTANTS['DOUBLES_EMOJI'] if '복식여부' in game and game['복식여부'] == '복식' else ""
+
 def create_recent_games_form(game):
-    with st.container(border=True):
-        if game["복식여부"] == "복식":
-            이모티콘 = " :couple: "
-        else:
-            이모티콘 = " "
-        st.write(f'##### {game["날짜"]} {game["대회명"]} {이모티콘}')
-        if game["점수1"] > game["점수2"]:
-            델타1 = game["델타1"]
-            델타2 = game["델타2"]
-            승패1 = ":crown:"
-            승패2 = ":skull:"
-        else:
-            델타1 = game["델타1"]
-            델타2 = game["델타2"]
-            승패1 = ":skull:"
-            승패2 = ":crown:"
-            
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label = f'{승패1} {game["팀1"]}', value = f'{game["점수1"]}', delta = f'{round(델타1)} 점 ELO')
-        with col2:
-            st.metric(label = f'{승패2} {game["팀2"]}', value = f'{game["점수2"]}', delta = f'{round(델타2)} 점 ELO')
+    """경기 결과를 표시하는 HTML/CSS 틀 생성"""
+    # 경기 결과 정보 가져오기
+    result = get_game_result(game)
     
+    # HTML 생성
+    html = f"""
+    {CSS_TEMPLATE}
+    <div class="game-card">
+        <div class="game-header">
+            <span class="game-date">{game['날짜']}</span>
+            <span class="game-tournament">{game['대회명']}{get_doubles_emoji(game)}</span>
+        </div>
+        <div class="game-content">
+            <div class="game-teams">
+                <div class="game-team">
+                    <span class="team-result" style="background-color: {result['result_color1']}">{result['result_text1']}</span>
+                    <div class="team-name">
+                        {game['팀1']}
+                        <span class="elo-delta">({format_elo_delta(game['델타1'])})</span>
+                    </div>
+                </div>
+                <div class="game-team">
+                    <span class="team-result" style="background-color: {result['result_color2']}">{result['result_text2']}</span>
+                    <div class="team-name">
+                        {game['팀2']}
+                        <span class="elo-delta">({format_elo_delta(game['델타2'])})</span>
+                    </div>
+                </div>
+            </div>
+            <div class="game-score">
+                <div class="score-value" style="color: {result['result_color1']}">{game['점수1']}</div>
+                <div class="score-value" style="color: {result['result_color2']}">{game['점수2']}</div>
+            </div>
+        </div>
+    </div>
+    """
+    st.html(html)
+
 # 입력_이름의 ELO 검색
 def 검색_ELO(elo_hist, 입력_이름):
     return elo_hist.loc[elo_hist["이름"] == 입력_이름]
@@ -310,16 +455,16 @@ st.divider()
             
 # 최근 경기 섹션
 st.write("### :chart: 최근 경기 ")
-try:
-    recent_games_table = create_recent_games_table(st.session_state.games_hist)
-    # st.dataframe(recent_games_table)
+# try:
+recent_games_table = create_recent_games_table(st.session_state.games_hist)
+# st.dataframe(recent_games_table)
 
-    with st.container(border=True, height = 500):
-        for idx, game in recent_games_table.iterrows():
-            create_recent_games_form(game)
+with st.container(border=True, height = 500):
+    for idx, game in recent_games_table.iterrows():
+        create_recent_games_form(game)
             
-except Exception as e:
-    st.error("저장된 경기가 없습니다. ")
+# except Exception as e:
+#     st.error("저장된 경기가 없습니다. ")
 
 with st.popover("테정테세"):
     st.image("logo.webp")
