@@ -18,7 +18,7 @@ ranking_table = create_ranking_table(elo_hist)
 등록선수 = ranking_table["이름"].unique()
 
 # 색상 테마 설정
-COLOR_WIN = '#4CAF50'  # 승리 색상 (녹색)
+COLOR_WIN = '#1E88E5'  # 승리 색상 (파란색)
 COLOR_LOSE = '#F44336'  # 패배 색상 (빨간색)
 COLOR_PRIMARY = '#1E88E5'  # 주요 차트 색상 (파란색)
 
@@ -148,6 +148,9 @@ def analyze_monthly_performance(games_df):
     monthly_stats['패배'] = monthly_stats['경기수'] - monthly_stats['승리']
     monthly_stats['승률'] = monthly_stats['승리'] / monthly_stats['경기수'] * 100
     monthly_stats['승률'] = monthly_stats['승률'].round(0).astype(int).astype(str) + '%'
+    
+    # 연월을 'YYYY년 MM월' 형식으로 변환
+    monthly_stats['연월_표시'] = monthly_stats['연월'].apply(lambda x: f"{x[:4]}년 {int(x[5:])}월")
     
     return monthly_stats.sort_values('연월', ascending=False)
 
@@ -456,21 +459,22 @@ try:
         st.write("##### 월별 성적")
         월별_성적 = analyze_monthly_performance(검색결과)
         if not 월별_성적.empty:
-            st.dataframe(월별_성적, use_container_width=True, hide_index=True)
+            # 연월_표시 컬럼을 제외하고 표시
+            st.dataframe(월별_성적[['연월', '경기수', '승리', '패배', '승률']], use_container_width=True, hide_index=True)
             
             # 월별 성적 차트
             fig = go.Figure()
             
             # 승리/패배 막대 그래프
             fig.add_trace(go.Bar(
-                x=월별_성적['연월'],
+                x=월별_성적['연월_표시'],
                 y=월별_성적['승리'],
                 name='승리',
                 marker_color=COLOR_WIN
             ))
             
             fig.add_trace(go.Bar(
-                x=월별_성적['연월'],
+                x=월별_성적['연월_표시'],
                 y=월별_성적['패배'],
                 name='패배',
                 marker_color=COLOR_LOSE
@@ -478,7 +482,7 @@ try:
             
             # 승률 선 그래프 추가
             fig.add_trace(go.Scatter(
-                x=월별_성적['연월'],
+                x=월별_성적['연월_표시'],
                 y=월별_성적['승률'].str.rstrip('%').astype(float),
                 mode='lines+markers+text',
                 name='승률',
@@ -504,7 +508,11 @@ try:
                     side='right',
                     range=[0, 100]
                 ),
-                height=500
+                height=500,
+                xaxis=dict(
+                    type='category',  # 카테고리형으로 설정하여 실제 데이터만 표시
+                    tickangle=45
+                )
             )
             
             st.plotly_chart(fig, use_container_width=True)
