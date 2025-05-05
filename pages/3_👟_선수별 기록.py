@@ -4,9 +4,9 @@ import streamlit as st
 import pickle
 import os
 from datetime import datetime
-from 홈 import create_recent_games_form
 import plotly.express as px
 import plotly.graph_objects as go
+from 홈 import create_recent_games_form
 
 # 파일 경로 설정
 data_file_path = "data/data.xlsx"
@@ -263,7 +263,6 @@ try:
         with st.container(border=True, height = 800):
             for idx, game in 검색결과.iloc[::-1].iterrows():
                 create_recent_games_form(game)
-        st.write(검색결과)
         
         # 승패 파이 차트
         if 게임_전적["전체"] > 0:
