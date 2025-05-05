@@ -344,6 +344,13 @@ try:
         st.write("##### 랭킹 변동")
         data_랭킹 = 랭킹_hist(elo_hist)
         data_랭킹 = data_랭킹.loc[data_랭킹['이름'] == 입력_이름]
+        
+        # 날짜를 datetime 형식으로 변환
+        data_랭킹['날짜'] = pd.to_datetime(data_랭킹['날짜'])
+        
+        # 대회명에 날짜 추가
+        data_랭킹['대회명_날짜'] = data_랭킹['대회명'] + ' (' + data_랭킹['날짜'].dt.strftime('%Y-%m-%d') + ')'
+        
         st.write(data_랭킹[["날짜", "대회명", "K값", "ELO", "순위"]].set_index(["날짜"]))
         
         # 랭킹 변동 그래프
@@ -351,7 +358,7 @@ try:
         
         # 순위 선 그래프 (낮을수록 좋은 순위)
         fig.add_trace(go.Scatter(
-            x=data_랭킹['대회명'],
+            x=data_랭킹['대회명_날짜'],
             y=data_랭킹['순위'],
             mode='lines+markers+text',
             name='순위',
@@ -364,7 +371,7 @@ try:
         # 레이아웃 설정
         fig.update_layout(
             title='랭킹 변동 추이',
-            xaxis_title='대회명',
+            xaxis_title='대회명 (날짜)',
             yaxis_title='순위 (낮을수록 좋음)',
             height=500,
             showlegend=True,
