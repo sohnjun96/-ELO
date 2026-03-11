@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ELO Cloudflare Full</title>
+    <style>
+      :root { --bg:#0b1020; --card:#151d34; --line:#2a375f; --text:#ebf0ff; --muted:#9db0df; --accent:#63a4ff; }
+      *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+      .wrap{max-width:1200px;margin:20px auto;padding:0 16px}
+      .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+      .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+      h1,h2,h3{margin:0 0 10px} h1{font-size:26px}
+      table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:8px;border-bottom:1px solid #223059;text-align:left}
+      input,select,button{width:100%;padding:9px;border-radius:8px;border:1px solid #2f3f6f;background:#111831;color:var(--text)}
+      button{cursor:pointer;background:#1b4fb8;border-color:#3a74e3} button:hover{filter:brightness(1.08)}
+      .row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+      .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.tab{width:auto;padding:8px 12px;background:#18274b}.tab.active{background:#275ecf}
+      .hide{display:none}.muted{color:var(--muted)} .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#233863}
+      pre{white-space:pre-wrap;background:#10162d;border:1px solid #273964;padding:10px;border-radius:8px;max-height:260px;overflow:auto}
+      @media(max-width:900px){.grid,.row,.row3{grid-template-columns:1fr}}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>ELO Tournament 관리자 (Cloudflare)</h1>
+      <div class="tabs" id="tabs"></div>
+
+      <section id="tab-home" class="tab-body"></section>
+      <section id="tab-tournament" class="tab-body hide"></section>
+      <section id="tab-records" class="tab-body hide"></section>
+      <section id="tab-player" class="tab-body hide"></section>
+      <section id="tab-stats" class="tab-body hide"></section>
+    </div>
+
+    <script>
+      const $ = (q) => document.querySelector(q);
+      const tabs = [
+        ['home','홈'],['tournament','대회진행'],['records','대회기록'],['player','선수별 기록'],['stats','통계']
+      ];
+      let state = { players: [], tournaments: [], selectedTournamentId: null };
+
+      async function api(path, options={}) {
+        const res = await fetch(path, { headers:{'content-type':'application/json'}, ...options });
+        const body = await res.json().catch(()=>({}));
+        if (!res.ok) throw new Error(body.error || `request failed: ${res.status}`);
+        return body;
+      }
+
+      function renderTabs() {
+        $('#tabs').innerHTML = tabs.map(([id,label],i)=>`<button class="tab ${i===0?'active':''}" data-id="${id}">${label}</button>`).join('');
+        $('#tabs').onclick = (e) => {
+          const id = e.target.dataset.id;
+          if (!id) return;
+          document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.id===id));
+          document.querySelectorAll('.tab-body').forEach(el => el.classList.add('hide'));
+          $(`#tab-${id}`).classList.remove('hide');
+          if (id==='records') loadRecords();
+          if (id==='player') loadPlayerHistory();
+          if (id==='stats') loadOverview();
+        };
+      }
+
+      async function bootstrap() {
+        renderTabs();
+        await loadBase();
+        renderHome();
+        renderTournament();
+      }
+
+      async function loadBase() {
+        state.players = await api('/api/players');
+        state.tournaments = await api('/api/tournaments');
+        const inProgress = state.tournaments.find(t=>t.status==='in_progress');
+        state.selectedTournamentId = inProgress?.id ?? state.tournaments[0]?.id ?? null;
+      }
+
+      function renderHome() {
+        $('#tab-home').innerHTML = `
+          <div class="grid">
+            <div class="card">
+              <h3>선수 등록</h3>
+              <div class="row">
+                <input id="new-player-name" placeholder="이름" />
+                <input id="new-player-elo" type="number" placeholder="초기 ELO (비우면 평균)" />
+              </div>
+              <button id="add-player">등록</button>
+              <p class="muted">선수 삭제 대신 비활성화 지원</p>
+            </div>
+            <div class="card">
+              <h3>ELO 시뮬레이터</h3>
+              <div class="row3">
+                <input id="sim-a" type="number" value="2000" />
+                <input id="sim-b" type="number" value="2000" />
+                <select id="sim-r"><option value="1">A 승</option><option value="0">B 승</option></select>
+              </div>
+              <button id="sim-btn">계산</button>
+              <pre id="sim-out"></pre>
+            </div>
+          </div>
+          <div class="card" style="margin-top:12px">
+            <h3>랭킹</h3>
+            <table><thead><tr><th>ID</th><th>선수</th><th>ELO</th><th>활성</th></tr></thead><tbody>
+            ${state.players.map(p=>`<tr><td>${p.id}</td><td>${p.name}</td><td>${Math.round(p.currentElo)}</td><td>${p.isActive?'Y':'N'}</td></tr>`).join('')}
+            </tbody></table>
+          </div>`;
+
+        $('#add-player').onclick = async () => {
+          try {
+            await api('/api/players', { method:'POST', body:JSON.stringify({ name:$('#new-player-name').value, initialElo: Number($('#new-player-elo').value) || undefined }) });
+            await loadBase(); renderHome(); renderTournament();
+          } catch (e) { alert(e.message); }
+        };
+
+        $('#sim-btn').onclick = () => {
+          const a = Number($('#sim-a').value), b = Number($('#sim-b').value), result = Number($('#sim-r').value), k = 100;
+          const ea = 1/(1+10**((b-a)/400));
+          const da = Math.round(k*(result-ea));
+          $('#sim-out').textContent = `기대승률 A: ${(ea*100).toFixed(2)}%\nA 델타: ${da}\nB 델타: ${-da}`;
+        };
+      }
+
+      function tournamentOptions() {
+        return state.tournaments.map(t=>`<option value="${t.id}" ${t.id===state.selectedTournamentId?'selected':''}>#${t.id} ${t.name} (${t.status})</option>`).join('');
+      }
+
+      function playerChecks(name) {
+        return state.players.filter(p=>p.isActive).map(p=>`<label><input type="checkbox" name="${name}" value="${p.id}"> ${p.name}</label>`).join('<br/>');
+      }
+
+      async function renderTournament() {
+        const t = state.selectedTournamentId ? await api(`/api/tournaments/${state.selectedTournamentId}`).catch(()=>null) : null;
+        const matches = state.selectedTournamentId ? await api(`/api/tournaments/${state.selectedTournamentId}/matches`).catch(()=>[]) : [];
+        const standings = state.selectedTournamentId ? await api(`/api/tournaments/${state.selectedTournamentId}/standings`).catch(()=>[]) : [];
+        const analysis = state.selectedTournamentId ? await api(`/api/tournaments/${state.selectedTournamentId}/analysis`).catch(()=>({pairwise:[]})) : {pairwise:[]};
+
+        $('#tab-tournament').innerHTML = `
+          <div class="grid">
+            <div class="card">
+              <h3>대회 시작</h3>
+              <div class="row3">
+                <input id="t-name" placeholder="대회명" />
+                <input id="t-date" type="date" value="${new Date().toISOString().slice(0,10)}" />
+                <select id="t-type"><option value="regular">정기</option><option value="always" selected>상시</option><option value="friendly">친선</option></select>
+              </div>
+              <input id="t-base" type="number" value="0" placeholder="base" style="margin:8px 0" />
+              <details><summary>참가자 선택</summary>${playerChecks('p')}</details>
+              <button id="create-t">대회 생성</button>
+            </div>
+            <div class="card">
+              <h3>진행 대회 관리</h3>
+              <select id="sel-t">${tournamentOptions() || '<option>대회 없음</option>'}</select>
+              ${t ? `<p><span class="pill">${t.name}</span> ${t.date} / ${t.type} / status=${t.status}</p>` : '<p class="muted">대회를 선택하세요</p>'}
+              <button id="refresh-t">새로고침</button>
+              ${t ? `<button id="finalize-t" ${t.status!=='in_progress'?'disabled':''}>대회 종료</button>
+              <button id="cancel-t" ${t.status!=='in_progress'?'disabled':''}>대회 취소</button>` : ''}
+            </div>
+          </div>
+
+          ${t ? `
+          <div class="grid" style="margin-top:12px">
+            <div class="card">
+              <h3>경기 기록</h3>
+              <div class="row3">
+                <select id="m-mode"><option value="singles">단식</option><option value="doubles">복식</option></select>
+                <input id="m-score-a" type="number" placeholder="팀A 점수" />
+                <input id="m-score-b" type="number" placeholder="팀B 점수" />
+              </div>
+              <div class="row" style="margin-top:8px">
+                <input id="m-team-a" placeholder="팀A ID 콤마(단식:1명/복식:2명)" />
+                <input id="m-team-b" placeholder="팀B ID 콤마" />
+              </div>
+              <button id="add-match">기록</button>
+            </div>
+            <div class="card">
+              <h3>분석 (예상 승률)</h3>
+              <pre>${analysis.pairwise.slice(0,20).map(x=>`${x.aName} vs ${x.bName}: ${x.aWinRate}%`).join('\n') || '데이터 없음'}</pre>
+            </div>
+          </div>
+
+          <div class="grid" style="margin-top:12px">
+            <div class="card">
+              <h3>현황</h3>
+              <table><thead><tr><th>선수</th><th>승</th><th>패</th><th>경기</th><th>임시ELO</th></tr></thead><tbody>
+              ${standings.map(s=>`<tr><td>${s.name}</td><td>${s.wins}</td><td>${s.losses}</td><td>${s.matches}</td><td>${Math.round(s.provisionalElo)}</td></tr>`).join('')}
+              </tbody></table>
+            </div>
+            <div class="card">
+              <h3>경기 목록</h3>
+              <table><thead><tr><th>ID</th><th>모드</th><th>A</th><th>B</th><th>점수</th><th></th></tr></thead><tbody>
+              ${matches.map(m=>`<tr><td>${m.id}</td><td>${m.mode}</td><td>${m.teamA.join(',')}</td><td>${m.teamB.join(',')}</td><td>${m.scoreA}:${m.scoreB}</td><td><button data-del="${m.id}">삭제</button></td></tr>`).join('')}
+              </tbody></table>
+            </div>
+          </div>` : ''}
+        `;
+
+        $('#create-t').onclick = async () => {
+          try {
+            const ids = [...document.querySelectorAll('input[name="p"]:checked')].map(el=>Number(el.value));
+            await api('/api/tournaments',{method:'POST',body:JSON.stringify({name:$('#t-name').value,date:$('#t-date').value,type:$('#t-type').value,base:Number($('#t-base').value),participantIds:ids})});
+            await loadBase(); await renderTournament();
+          } catch(e){ alert(e.message); }
+        };
+
+        $('#sel-t').onchange = async (e) => { state.selectedTournamentId = Number(e.target.value); await renderTournament(); };
+        $('#refresh-t').onclick = async () => { await loadBase(); await renderTournament(); };
+
+        if (t) {
+          $('#finalize-t').onclick = async () => { if(confirm('대회를 종료할까요?')) { await api(`/api/tournaments/${t.id}/finalize`,{method:'POST'}); await loadBase(); await renderHome(); await renderTournament(); } };
+          $('#cancel-t').onclick = async () => { if(confirm('대회를 취소할까요?')) { await api(`/api/tournaments/${t.id}/cancel`,{method:'POST'}); await loadBase(); await renderTournament(); } };
+          $('#add-match').onclick = async () => {
+            try {
+              await api(`/api/tournaments/${t.id}/matches`, { method:'POST', body:JSON.stringify({ mode:$('#m-mode').value, teamA:$('#m-team-a').value.split(',').map(v=>Number(v.trim())), teamB:$('#m-team-b').value.split(',').map(v=>Number(v.trim())), scoreA:Number($('#m-score-a').value), scoreB:Number($('#m-score-b').value) })});
+              await renderTournament();
+            } catch(e){ alert(e.message); }
+          };
+          document.querySelectorAll('[data-del]').forEach(btn=>btn.onclick = async ()=>{ await api(`/api/tournaments/${t.id}/matches/${btn.dataset.del}`,{method:'DELETE'}); await renderTournament(); });
+        }
+      }
+
+      async function loadRecords() {
+        const data = await api('/api/stats/overview');
+        $('#tab-records').innerHTML = `
+          <div class="card">
+            <h3>대회 기록</h3>
+            <table><thead><tr><th>ID</th><th>이름</th><th>일자</th><th>종류</th><th>상태</th></tr></thead><tbody>
+            ${data.tournaments.map(t=>`<tr><td>${t.id}</td><td>${t.name}</td><td>${t.date}</td><td>${t.type}</td><td>${t.status}</td></tr>`).join('')}
+            </tbody></table>
+          </div>`;
+      }
+
+      async function loadPlayerHistory() {
+        const opts = state.players.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+        $('#tab-player').innerHTML = `
+          <div class="card">
+            <h3>선수별 기록</h3>
+            <select id="ph-sel">${opts}</select>
+            <button id="ph-load">조회</button>
+            <div id="ph-res"></div>
+          </div>`;
+        $('#ph-load').onclick = async () => {
+          const id = Number($('#ph-sel').value);
+          const r = await api(`/api/history/players/${id}`);
+          $('#ph-res').innerHTML = `<p><b>${r.player.name}</b> 현재 ELO: ${Math.round(r.player.currentElo)}</p><table><thead><tr><th>대회</th><th>일자</th><th>전</th><th>후</th><th>Δ</th></tr></thead><tbody>${r.history.map(h=>`<tr><td>${h.tournamentName}</td><td>${h.tournamentDate}</td><td>${Math.round(h.eloBefore)}</td><td>${Math.round(h.eloAfter)}</td><td>${Math.round(h.deltaTotal)}</td></tr>`).join('')}</tbody></table>`;
+        };
+      }
+
+      async function loadOverview() {
+        const o = await api('/api/stats/overview');
+        $('#tab-stats').innerHTML = `
+          <div class="grid">
+            <div class="card"><h3>전체 집계</h3><p>선수: ${o.counts.players}</p><p>대회: ${o.counts.tournaments}</p><p>경기: ${o.counts.matches}</p></div>
+            <div class="card"><h3>초기화</h3><p class="muted">모든 데이터 삭제</p><button id="reset-all">전체 초기화</button></div>
+          </div>
+          <div class="grid" style="margin-top:12px">
+            <div class="card"><h3>ELO TOP 10</h3><pre>${o.topByElo.map((x,i)=>`${i+1}. ${x.name} (${Math.round(x.currentElo)})`).join('\n')}</pre></div>
+            <div class="card"><h3>승률 TOP 10</h3><pre>${o.topWinrate.map((x,i)=>`${i+1}. ${x.name} ${x.winRate}% (${x.matches}경기)`).join('\n')}</pre></div>
+          </div>`;
+        $('#reset-all').onclick = async ()=>{ if(confirm('정말 초기화할까요?')) { await api('/api/admin/reset',{method:'POST'}); await loadBase(); renderHome(); renderTournament(); alert('초기화 완료'); } };
+      }
+
+      bootstrap().catch((e)=>{ document.body.innerHTML = `<pre style="color:#fff">초기화 실패: ${e.message}</pre>`; });
+    </script>
+  </body>
+</html>

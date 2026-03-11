@@ -63,3 +63,56 @@ Elo(ELO) 레이팅 시스템은 경기 결과를 기반으로 플레이어 또�
 - 자동 패치기능 추가
 #### 250208
 - 델타가 개인별로 계산되도록 수정
+
+---
+
+## Cloudflare 재구현 버전 (신규)
+
+요청사항에 맞춰 기존 Streamlit 기능을 Cloudflare Workers + D1 + 정적 웹으로 재구현했습니다.
+Slack 백업/파일 저장(`xlsx`,`pickle`)은 제거하고 DB 영속 저장으로 대체했습니다.
+
+### 구현 범위
+- 선수 관리: 등록, 목록 조회, 상태/점수 수정 API
+- 대회 진행: 생성, 설정 수정, 진행중/종료/취소 상태 관리
+- 경기 기록: 단식/복식 입력, 목록 조회, 삭제
+- 분석/현황: 참가자 간 예상 승률, 진행중 임시 순위(승/패/임시 ELO)
+- 대회 종료: 대회 시작 스냅샷 ELO 기반 일괄 반영 + ELO 이력 저장
+- 기록/통계: 대회 기록, 선수별 ELO 변동 기록, 전체 TOP 통계
+- 관리자 기능: 전체 초기화 API
+
+### 구성
+- API/백엔드: `src/worker.js` (Cloudflare Worker)
+- DB: Cloudflare D1 (`schema.sql`)
+- 웹 UI: `public/index.html` (홈/대회진행/대회기록/선수별 기록/통계 탭)
+
+### 로컬/배포 절차
+1. 의존성 설치
+   ```bash
+   npm install
+   ```
+2. D1 DB 생성
+   ```bash
+   npx wrangler d1 create elo-db
+   ```
+3. 생성된 `database_id`를 `wrangler.toml`에 반영
+4. 스키마 적용
+   ```bash
+   npm run db:init
+   ```
+5. 로컬 실행
+   ```bash
+   npm run dev
+   ```
+6. 배포
+   ```bash
+   npm run deploy
+   ```
+
+### API 목록
+- Health: `GET /api/health`
+- Players: `GET /api/players`, `POST /api/players`, `PATCH /api/players/:id`
+- Tournaments: `GET /api/tournaments`, `POST /api/tournaments`, `GET /api/tournaments/:id`, `PATCH /api/tournaments/:id`
+- Matches: `GET /api/tournaments/:id/matches`, `POST /api/tournaments/:id/matches`, `DELETE /api/tournaments/:id/matches/:matchId`
+- Tournament tools: `GET /api/tournaments/:id/analysis`, `GET /api/tournaments/:id/standings`, `POST /api/tournaments/:id/finalize`, `POST /api/tournaments/:id/cancel`
+- History/Stats: `GET /api/history/players/:id`, `GET /api/stats/overview`
+- Admin: `POST /api/admin/reset`
